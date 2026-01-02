@@ -1,11 +1,11 @@
 import { Outlet } from "react-router-dom";
-import { BottomNav } from "@/components/BottomNav";
+import { LiquidGlassNav } from "@/components/LiquidGlassNav";
 
 export function AppLayout() {
   return (
-    <div className="min-h-screen pb-24">
+    <div className="min-h-screen pb-28">
       <Outlet />
-      <BottomNav />
+      <LiquidGlassNav />
     </div>
   );
 }
