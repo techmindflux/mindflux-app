@@ -14,7 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        sans: ['Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        display: ['Cormorant Garamond', 'Georgia', 'serif'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -69,15 +70,17 @@ export default {
       },
       borderRadius: {
         lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
-        "2xl": "1.25rem",
-        "3xl": "1.5rem",
+        md: "calc(var(--radius) - 4px)",
+        sm: "calc(var(--radius) - 8px)",
+        "2xl": "1.5rem",
+        "3xl": "2rem",
+        "4xl": "2.5rem",
       },
       boxShadow: {
-        'glass': '0 4px 24px -4px hsl(var(--glass-shadow)), 0 0 0 1px hsl(var(--glass-border))',
-        'glass-lg': '0 8px 32px -8px hsl(var(--glass-shadow)), 0 0 0 1px hsl(var(--glass-border))',
-        'soft': '0 2px 8px -2px hsl(var(--glass-shadow))',
+        'glass': '0 8px 32px -8px hsl(var(--glass-shadow)), 0 0 0 1px hsl(var(--glass-border))',
+        'glass-lg': '0 16px 48px -12px hsl(var(--glass-shadow)), 0 0 0 1px hsl(var(--glass-border))',
+        'soft': '0 4px 12px -4px hsl(var(--glass-shadow))',
+        'glow': '0 0 40px -10px hsl(var(--primary) / 0.3)',
       },
       keyframes: {
         "accordion-down": {
@@ -90,18 +93,27 @@ export default {
         },
         "float": {
           "0%, 100%": { transform: "translateY(0)" },
-          "50%": { transform: "translateY(-10px)" },
+          "50%": { transform: "translateY(-12px)" },
         },
         "shimmer": {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
+        "breathe": {
+          "0%, 100%": { transform: "scale(1)", opacity: "0.4" },
+          "50%": { transform: "scale(1.1)", opacity: "0.6" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "float": "float 6s ease-in-out infinite",
+        "float": "float 8s ease-in-out infinite",
         "shimmer": "shimmer 2s linear infinite",
+        "breathe": "breathe 6s ease-in-out infinite",
+      },
+      spacing: {
+        '18': '4.5rem',
+        '22': '5.5rem',
       },
     },
   },
