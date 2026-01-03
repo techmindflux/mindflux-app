@@ -7,18 +7,21 @@ import { useEffect } from "react";
 
 export default function Home() {
   const navigate = useNavigate();
-  const { isAuthenticated, authType, logout } = useAuth();
+  const { isAuthenticated, authType, logout, user, isLoading } = useAuth();
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated && !isLoading) {
       navigate("/");
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, isLoading, navigate]);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/");
   };
+  
+  // Get display name from user or default to guest
+  const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0];
 
   const sleepScore = 78;
 
@@ -63,7 +66,7 @@ export default function Home() {
       <header className="relative z-10 flex items-center justify-between px-6 pt-14 pb-4">
         <div className="animate-fade-in">
           <p className="text-sm font-medium text-muted-foreground tracking-wide uppercase">
-            {authType === "google" ? "Welcome back" : "Hello, Guest"}
+            {authType === "google" ? `Welcome, ${displayName || "back"}` : "Hello, Guest"}
           </p>
           <h1 className="text-3xl font-display font-light text-foreground mt-1">
             Your Sanctuary
