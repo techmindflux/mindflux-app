@@ -1,19 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { GlassCard } from "@/components/GlassCard";
-import { ScoreRing } from "@/components/ScoreRing";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { 
-  Moon, 
-  TrendingUp, 
-  ChevronRight, 
-  Brain, 
-  LogOut, 
-  User,
-  Sparkles 
-} from "lucide-react";
+import { Moon, Sparkles, LogOut, Leaf } from "lucide-react";
 import { useEffect } from "react";
 
 export default function Home() {
@@ -32,109 +21,167 @@ export default function Home() {
   };
 
   const sleepScore = 78;
-  const trendValue = "+3";
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      {/* Decorative background */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 right-0 w-72 h-72 rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute bottom-40 left-0 w-80 h-80 rounded-full bg-accent/20 blur-3xl" />
+    <div className="min-h-screen flex flex-col bg-background relative overflow-hidden">
+      {/* Serene ambient background */}
+      <div className="fixed inset-0 pointer-events-none">
+        {/* Soft gradient orbs */}
+        <div 
+          className="ambient-glow animate-breathe" 
+          style={{
+            top: '-10%',
+            right: '-20%',
+            width: '60%',
+            height: '50%',
+            background: 'hsl(210 50% 80%)',
+          }}
+        />
+        <div 
+          className="ambient-glow animate-breathe delay-300" 
+          style={{
+            bottom: '10%',
+            left: '-15%',
+            width: '50%',
+            height: '40%',
+            background: 'hsl(35 50% 85%)',
+          }}
+        />
+        <div 
+          className="ambient-glow animate-breathe delay-500" 
+          style={{
+            top: '40%',
+            right: '-10%',
+            width: '35%',
+            height: '30%',
+            background: 'hsl(150 35% 80%)',
+          }}
+        />
       </div>
 
       {/* Header */}
-      <header className="relative z-10 flex items-center justify-between p-5 pt-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Home</h1>
-          <div className="flex items-center gap-2 mt-1">
-            <User className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">
-              {authType === "google" ? "Signed in" : "Guest"}
-            </span>
-          </div>
+      <header className="relative z-10 flex items-center justify-between px-6 pt-14 pb-4">
+        <div className="animate-fade-in">
+          <p className="text-sm font-medium text-muted-foreground tracking-wide uppercase">
+            {authType === "google" ? "Welcome back" : "Hello, Guest"}
+          </p>
+          <h1 className="text-3xl font-display font-light text-foreground mt-1">
+            Your Sanctuary
+          </h1>
         </div>
         <ThemeToggle />
       </header>
 
       {/* Main content */}
-      <main className="relative z-10 flex-1 px-5 pb-8 space-y-5">
+      <main className="relative z-10 flex-1 px-6 pt-4 pb-8 space-y-6">
+        
+        {/* Daily Insight */}
+        <div className="animate-slide-up">
+          <p className="text-muted-foreground text-sm leading-relaxed max-w-[280px]">
+            "Peace comes from within. Do not seek it without."
+          </p>
+          <p className="text-muted-foreground/60 text-xs mt-2">— Buddha</p>
+        </div>
+
         {/* Sleep Score Card */}
-        <GlassCard className="animate-slide-up">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-primary/10 flex items-center justify-center">
-                <Moon className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-foreground">Sleep Score</h2>
-                <p className="text-sm text-muted-foreground">Last night's rest</p>
-              </div>
+        <div className="glass-card p-6 animate-slide-up delay-100">
+          <div className="flex items-start gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Moon className="w-6 h-6 text-primary" />
             </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg font-display font-medium text-foreground">
+                Sleep Quality
+              </h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Last night's rest
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <ScoreRing score={sleepScore} size="lg" />
-            
-            <div className="flex-1 pl-6 space-y-3">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-score-good" />
-                <span className="text-sm font-medium text-score-good">
-                  {trendValue} vs yesterday
+          <div className="mt-6 flex items-end justify-between">
+            <div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-5xl font-display font-light text-foreground">
+                  {sleepScore}
                 </span>
+                <span className="text-lg text-muted-foreground font-light">/100</span>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Your sleep quality is improving. Keep up the good routine!
+              <p className="text-sm text-score-good mt-2 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" />
+                Above your weekly average
               </p>
-              <Button variant="ghost" size="sm" className="text-primary -ml-3" disabled>
-                <Sparkles className="w-4 h-4" />
-                View details
-              </Button>
+            </div>
+            
+            {/* Minimal score arc */}
+            <div className="relative w-20 h-20">
+              <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="15.5"
+                  fill="none"
+                  stroke="hsl(var(--muted))"
+                  strokeWidth="2"
+                />
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="15.5"
+                  fill="none"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeDasharray={`${sleepScore * 0.97} 100`}
+                  className="transition-all duration-1000 ease-out"
+                />
+              </svg>
             </div>
           </div>
-        </GlassCard>
+        </div>
 
         {/* Stress Test Card */}
-        <GlassCard className="animate-slide-up delay-100">
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-accent flex items-center justify-center">
-                <Brain className="w-5 h-5 text-accent-foreground" />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-foreground">Stress Test</h2>
-                <p className="text-sm text-muted-foreground">Measure your stress levels</p>
-              </div>
+        <div className="glass-card p-6 animate-slide-up delay-200">
+          <div className="flex items-start gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-accent flex items-center justify-center flex-shrink-0">
+              <Leaf className="w-6 h-6 text-accent-foreground" />
             </div>
-            <Badge variant="secondary" className="text-xs font-medium">
-              In development
-            </Badge>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-display font-medium text-foreground">
+                  Stress Assessment
+                </h2>
+              </div>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Coming soon
+              </p>
+            </div>
           </div>
 
-          <p className="text-sm text-muted-foreground mb-4">
-            Our advanced stress detection model is currently being refined to provide you with accurate insights.
+          <p className="text-sm text-muted-foreground mt-5 leading-relaxed">
+            Our mindful stress assessment is being crafted with care. Soon you'll be able to understand your stress patterns.
           </p>
 
           <Button 
             variant="secondary" 
-            className="w-full opacity-60" 
+            className="w-full mt-5 rounded-xl h-12 font-medium" 
             disabled
           >
-            Start Test
+            Begin Assessment
           </Button>
-        </GlassCard>
+        </div>
 
         {/* Spacer */}
-        <div className="flex-1" />
+        <div className="flex-1 min-h-8" />
 
-        {/* Logout Button */}
+        {/* Logout */}
         <Button
           variant="ghost"
-          className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 animate-fade-in delay-200"
+          className="w-full text-muted-foreground hover:text-foreground hover:bg-transparent animate-fade-in delay-300"
           onClick={handleLogout}
         >
-          <LogOut className="w-5 h-5" />
-          Logout
+          <LogOut className="w-4 h-4 mr-2" />
+          Sign out
         </Button>
       </main>
     </div>
