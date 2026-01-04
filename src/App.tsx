@@ -9,6 +9,7 @@ import { AppLayout } from "@/layouts/AppLayout";
 import Auth from "./pages/Auth";
 import Home from "./pages/Home";
 import Explore from "./pages/Explore";
+import Reflect from "./pages/Reflect";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
               <Route element={<AppLayout />}>
                 <Route path="/home" element={<Home />} />
                 <Route path="/explore" element={<Explore />} />
+                <Route path="/reflect" element={<Reflect />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
