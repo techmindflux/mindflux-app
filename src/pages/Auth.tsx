@@ -78,7 +78,7 @@ export default function Auth() {
               MindFlux
             </h1>
             <p className="text-lg text-muted-foreground font-medium">
-              Calmness Quantified
+              Stress - Measured, Managed, and Mastered
             </p>
           </div>
 

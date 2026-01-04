@@ -16,4 +16,18 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    outDir: "dist",
+    assetsDir: "assets",
+  },
+  base: "./", // Important for Capacitor - use relative paths
+  optimizeDeps: {
+    // Pre-bundle dependencies for faster dev server startup
+    include: [
+      "react",
+      "react-dom",
+      "react-router-dom",
+      "@tanstack/react-query",
+    ],
+  },
 }));
