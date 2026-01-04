@@ -8,7 +8,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { AppLayout } from "@/layouts/AppLayout";
 import Auth from "./pages/Auth";
 import Home from "./pages/Home";
-import Test from "./pages/Test";
+import Explore from "./pages/Explore";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,7 +25,7 @@ const App = () => (
               <Route path="/" element={<Auth />} />
               <Route element={<AppLayout />}>
                 <Route path="/home" element={<Home />} />
-                <Route path="/test" element={<Test />} />
+                <Route path="/explore" element={<Explore />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
