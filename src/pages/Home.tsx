@@ -72,7 +72,18 @@ export default function Home() {
             Your Sanctuary
           </h1>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Button
+            variant="glass"
+            size="icon"
+            onClick={handleLogout}
+            className="rounded-full"
+            aria-label="Sign out"
+          >
+            <LogOut className="h-5 w-5 text-foreground" />
+          </Button>
+        </div>
       </header>
 
       {/* Main content */}
@@ -156,17 +167,6 @@ export default function Home() {
         </div>
       </main>
 
-      {/* Logout - positioned at bottom */}
-      <div className="relative z-10 px-6 pb-8 animate-fade-in delay-300">
-        <Button
-          variant="ghost"
-          className="w-full text-muted-foreground hover:text-foreground hover:bg-transparent"
-          onClick={handleLogout}
-        >
-          <LogOut className="w-4 h-4 mr-2" />
-          Sign out
-        </Button>
-      </div>
     </div>
   );
 }
