@@ -64,11 +64,14 @@ export default function Auth() {
         <div className="w-full max-w-sm space-y-12">
           {/* Logo and branding */}
           <div className="text-center space-y-4 animate-fade-in">
-            <div className="inline-flex items-center justify-center mb-4">
+            <div className="inline-flex items-center justify-center mb-4 relative">
+              {/* Ambient glow behind logo */}
+              <div className="absolute inset-0 w-32 h-32 rounded-full bg-gradient-to-br from-[hsl(280,70%,60%)] via-[hsl(200,80%,60%)] to-[hsl(320,70%,60%)] opacity-40 blur-2xl animate-breathe" />
+              <div className="absolute inset-0 w-32 h-32 rounded-full bg-gradient-to-tr from-[hsl(200,80%,60%)] to-[hsl(280,70%,60%)] opacity-30 blur-xl animate-pulse-soft" />
               <img 
                 src="/logo.png" 
                 alt="MindFlux Logo" 
-                className="w-32 h-32 object-contain"
+                className="w-32 h-32 object-contain relative z-10 drop-shadow-lg animate-float"
               />
             </div>
             <h1 className="text-4xl font-bold tracking-tight text-foreground font-display">
