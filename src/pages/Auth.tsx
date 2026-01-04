@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { Waves, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Auth() {
@@ -64,8 +64,12 @@ export default function Auth() {
         <div className="w-full max-w-sm space-y-12">
           {/* Logo and branding */}
           <div className="text-center space-y-4 animate-fade-in">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-primary to-primary/70 shadow-lg mb-4">
-              <Waves className="w-10 h-10 text-primary-foreground" />
+            <div className="inline-flex items-center justify-center mb-4">
+              <img 
+                src="/logo.png" 
+                alt="MindFlux Logo" 
+                className="w-32 h-32 object-contain"
+              />
             </div>
             <h1 className="text-4xl font-bold tracking-tight text-foreground font-display">
               MindFlux
