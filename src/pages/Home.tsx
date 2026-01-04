@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
-import { Moon, Sparkles, LogOut, Leaf } from "lucide-react";
+import { LogOut, Heart } from "lucide-react";
 import { useEffect } from "react";
 
 export default function Home() {
@@ -23,13 +23,13 @@ export default function Home() {
   // Get display name from user or default to guest
   const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0];
 
-  const sleepScore = 78;
+  // Placeholder last stress score (null means no check-in yet)
+  const lastStressScore: number | null = null;
 
   return (
     <div className="min-h-screen flex flex-col bg-background relative overflow-hidden">
       {/* Serene ambient background */}
       <div className="fixed inset-0 pointer-events-none">
-        {/* Soft gradient orbs */}
         <div 
           className="ambient-glow animate-breathe" 
           style={{
@@ -76,117 +76,97 @@ export default function Home() {
       </header>
 
       {/* Main content */}
-      <main className="relative z-10 flex-1 px-6 pt-4 pb-8 space-y-6">
+      <main className="relative z-10 flex-1 px-6 flex flex-col items-center justify-center pb-24">
         
-        {/* Daily Insight */}
-        <div className="animate-slide-up">
-          <p className="text-muted-foreground text-sm leading-relaxed max-w-[280px]">
-            "Peace comes from within. Do not seek it without."
-          </p>
-          <p className="text-muted-foreground/60 text-xs mt-2">— Buddha</p>
-        </div>
-
-        {/* Sleep Score Card */}
-        <div className="glass-card p-6 animate-slide-up delay-100">
-          <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Moon className="w-6 h-6 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h2 className="text-lg font-display font-medium text-foreground">
-                Sleep Quality
-              </h2>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                Last night's rest
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-6 flex items-end justify-between">
-            <div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-5xl font-display font-light text-foreground">
-                  {sleepScore}
-                </span>
-                <span className="text-lg text-muted-foreground font-light">/100</span>
-              </div>
-              <p className="text-sm text-score-good mt-2 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
-                Above your weekly average
-              </p>
-            </div>
+        {/* Stress Check-in Circle */}
+        <div className="flex flex-col items-center text-center animate-slide-up">
+          {/* Circle container */}
+          <div 
+            className="relative w-52 h-52 rounded-full glass-card flex items-center justify-center cursor-pointer group transition-all duration-300 hover:scale-[1.02]"
+            onClick={() => {/* TODO: Navigate to stress check-in */}}
+          >
+            {/* Subtle glow effect */}
+            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/20 via-transparent to-accent/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             
-            {/* Minimal score arc */}
-            <div className="relative w-20 h-20">
-              <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+            {/* Inner content */}
+            <div className="relative z-10 flex flex-col items-center">
+              {lastStressScore !== null ? (
+                <>
+                  <span className="text-5xl font-display font-light text-foreground">
+                    {lastStressScore}
+                  </span>
+                  <span className="text-sm text-muted-foreground mt-1">/100</span>
+                </>
+              ) : (
+                <>
+                  <Heart className="w-10 h-10 text-primary/70 mb-2" />
+                  <span className="text-sm text-muted-foreground">Tap to begin</span>
+                </>
+              )}
+            </div>
+
+            {/* Progress ring (only show if there's a score) */}
+            {lastStressScore !== null && (
+              <svg 
+                className="absolute inset-0 w-full h-full -rotate-90" 
+                viewBox="0 0 100 100"
+              >
                 <circle
-                  cx="18"
-                  cy="18"
-                  r="15.5"
+                  cx="50"
+                  cy="50"
+                  r="46"
                   fill="none"
                   stroke="hsl(var(--muted))"
                   strokeWidth="2"
                 />
                 <circle
-                  cx="18"
-                  cy="18"
-                  r="15.5"
+                  cx="50"
+                  cy="50"
+                  r="46"
                   fill="none"
                   stroke="hsl(var(--primary))"
                   strokeWidth="2"
                   strokeLinecap="round"
-                  strokeDasharray={`${sleepScore * 0.97} 100`}
+                  strokeDasharray={`${lastStressScore * 2.89} 289`}
                   className="transition-all duration-1000 ease-out"
                 />
               </svg>
-            </div>
-          </div>
-        </div>
-
-        {/* Stress Test Card */}
-        <div className="glass-card p-6 animate-slide-up delay-200">
-          <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-accent flex items-center justify-center flex-shrink-0">
-              <Leaf className="w-6 h-6 text-accent-foreground" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-display font-medium text-foreground">
-                  Stress Assessment
-                </h2>
-              </div>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                Coming soon
-              </p>
-            </div>
+            )}
           </div>
 
-          <p className="text-sm text-muted-foreground mt-5 leading-relaxed">
-            Our mindful stress assessment is being crafted with care. Soon you'll be able to understand your stress patterns.
+          {/* Label */}
+          <h2 className="text-xl font-display font-medium text-foreground mt-8">
+            Stress Check-in
+          </h2>
+          <p className="text-sm text-muted-foreground mt-2 max-w-[200px]">
+            {lastStressScore !== null 
+              ? "Your last assessment score" 
+              : "Take a moment to understand your stress levels"
+            }
           </p>
 
+          {/* CTA Button */}
           <Button 
             variant="secondary" 
-            className="w-full mt-5 rounded-xl h-12 font-medium" 
-            disabled
+            className="mt-8 rounded-xl h-12 px-8 font-medium"
+            onClick={() => {/* TODO: Navigate to stress check-in */}}
           >
-            Begin Assessment
+            {lastStressScore !== null ? "Check in again" : "Begin Check-in"}
           </Button>
         </div>
+      </main>
 
-        {/* Spacer */}
-        <div className="flex-1 min-h-8" />
-
-        {/* Logout */}
+      {/* Logout - positioned at bottom */}
+      <div className="relative z-10 px-6 pb-8 animate-fade-in delay-300">
         <Button
           variant="ghost"
-          className="w-full text-muted-foreground hover:text-foreground hover:bg-transparent animate-fade-in delay-300"
+          className="w-full text-muted-foreground hover:text-foreground hover:bg-transparent"
           onClick={handleLogout}
         >
           <LogOut className="w-4 h-4 mr-2" />
           Sign out
         </Button>
-      </main>
+      </div>
     </div>
   );
 }
