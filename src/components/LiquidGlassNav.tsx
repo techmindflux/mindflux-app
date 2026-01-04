@@ -1,10 +1,10 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, FlaskConical } from "lucide-react";
+import { Home, Compass } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { path: "/home", icon: Home, label: "Home" },
-  { path: "/test", icon: FlaskConical, label: "Test" },
+  { path: "/explore", icon: Compass, label: "Explore" },
 ];
 
 export function LiquidGlassNav() {
