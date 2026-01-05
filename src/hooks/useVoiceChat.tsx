@@ -32,49 +32,41 @@ export function useVoiceChat(): UseVoiceChatReturn {
 
   const recorderMimeRef = useRef<string>("audio/webm");
 
-  // Play TTS audio
+  // Play TTS audio using Web Speech API
   const playAudio = useCallback(async (text: string) => {
     try {
       setIsSpeaking(true);
       
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/lumina-tts`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${SUPABASE_KEY}`,
-        },
-        body: JSON.stringify({ text }),
-      });
-
-      if (!response.ok) throw new Error("TTS failed");
-
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
       
-      if (audioRef.current) {
-        audioRef.current.pause();
-        URL.revokeObjectURL(audioRef.current.src);
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.95;
+      utterance.pitch = 1.0;
+      
+      // Try to find a good female voice
+      const voices = window.speechSynthesis.getVoices();
+      const preferredVoice = voices.find(
+        (v) => v.name.includes("Samantha") || v.name.includes("Karen") || v.name.includes("Female")
+      ) || voices.find((v) => v.lang.startsWith("en"));
+      
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
       }
       
-      const audio = new Audio(audioUrl);
-      audioRef.current = audio;
-
-      audio.onended = () => {
+      utterance.onend = () => {
         setIsSpeaking(false);
-        URL.revokeObjectURL(audioUrl);
       };
-
-      audio.onerror = () => {
+      
+      utterance.onerror = () => {
         setIsSpeaking(false);
-        URL.revokeObjectURL(audioUrl);
       };
-
-      await audio.play();
+      
+      window.speechSynthesis.speak(utterance);
     } catch (err) {
-      console.error("Audio playback error:", err);
+      console.error("Speech synthesis error:", err);
       setIsSpeaking(false);
-      setError("Audio playback was blocked. Tap the mic once to enable audio.");
+      setError("Speech synthesis failed.");
     }
   }, []);
 
