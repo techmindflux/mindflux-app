@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { X, ArrowLeft, ArrowRight } from "lucide-react";
+import { X, ArrowLeft, ArrowRight, Plus, PenLine, Camera, Mic } from "lucide-react";
 
 interface StressCategory {
   id: string;
@@ -79,12 +79,21 @@ const stressCategories: StressCategory[] = [
   },
 ];
 
+const contextOptions = {
+  activities: ["Working", "Eating", "Resting", "Commuting", "Exercising", "Socializing"],
+  companions: ["By Myself", "Friends", "Family", "Co-Workers", "Partner", "Pets"],
+  locations: ["Home", "Work", "School", "Outside", "Commuting", "Gym"],
+};
+
 export default function ManualCheckIn() {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading } = useAuth();
-  const [step, setStep] = useState<"category" | "feeling">("category");
+  const [step, setStep] = useState<"category" | "feeling" | "context">("category");
   const [selectedCategory, setSelectedCategory] = useState<StressCategory | null>(null);
-  const [selectedFeeling, setSelectedFeeling] = useState<string | null>(null);
+  const [selectedFeelings, setSelectedFeelings] = useState<string[]>([]);
+  const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
+  const [selectedCompanions, setSelectedCompanions] = useState<string[]>([]);
+  const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
 
   useEffect(() => {
     if (!isAuthenticated && !isLoading) {
@@ -97,24 +106,78 @@ export default function ManualCheckIn() {
     setStep("feeling");
   };
 
-  const handleFeelingSelect = (feeling: string) => {
-    setSelectedFeeling(feeling);
+  const toggleFeeling = (feeling: string) => {
+    setSelectedFeelings((prev) =>
+      prev.includes(feeling)
+        ? prev.filter((f) => f !== feeling)
+        : [...prev, feeling]
+    );
+  };
+
+  const toggleActivity = (activity: string) => {
+    setSelectedActivities((prev) =>
+      prev.includes(activity)
+        ? prev.filter((a) => a !== activity)
+        : [...prev, activity]
+    );
+  };
+
+  const toggleCompanion = (companion: string) => {
+    setSelectedCompanions((prev) =>
+      prev.includes(companion)
+        ? prev.filter((c) => c !== companion)
+        : [...prev, companion]
+    );
+  };
+
+  const toggleLocation = (location: string) => {
+    setSelectedLocations((prev) =>
+      prev.includes(location)
+        ? prev.filter((l) => l !== location)
+        : [...prev, location]
+    );
   };
 
   const handleBack = () => {
-    if (step === "feeling") {
+    if (step === "context") {
+      setStep("feeling");
+    } else if (step === "feeling") {
       setStep("category");
-      setSelectedFeeling(null);
+      setSelectedFeelings([]);
     } else {
       navigate("/check-in");
     }
   };
 
   const handleContinue = () => {
-    if (selectedFeeling && selectedCategory) {
-      // TODO: Navigate to next step (intensity slider or save)
-      console.log("Selected:", selectedCategory.id, selectedFeeling);
+    if (selectedFeelings.length > 0 && selectedCategory) {
+      setStep("context");
     }
+  };
+
+  const handleCompleteCheckIn = () => {
+    // TODO: Save check-in data to database
+    console.log("Check-in complete:", {
+      category: selectedCategory?.id,
+      feelings: selectedFeelings,
+      activities: selectedActivities,
+      companions: selectedCompanions,
+      locations: selectedLocations,
+    });
+    navigate("/");
+  };
+
+  const getCategoryGradientStyle = () => {
+    if (!selectedCategory) return {};
+    
+    const gradientMap: Record<string, string> = {
+      overwhelmed: "linear-gradient(135deg, #f43f5e, #f97316)",
+      activated: "linear-gradient(135deg, #fbbf24, #fb923c)",
+      drained: "linear-gradient(135deg, #38bdf8, #6366f1)",
+      grounded: "linear-gradient(135deg, #34d399, #14b8a6)",
+    };
+    
+    return { background: gradientMap[selectedCategory.id] || gradientMap.overwhelmed };
   };
 
   return (
@@ -131,12 +194,22 @@ export default function ManualCheckIn() {
           className="rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50"
           aria-label="Back"
         >
-          {step === "feeling" ? (
+          {step !== "category" ? (
             <ArrowLeft className="h-5 w-5" />
           ) : (
             <X className="h-5 w-5" />
           )}
         </Button>
+
+        {/* Mini category icon in context step */}
+        {step === "context" && selectedCategory && (
+          <div 
+            className="w-12 h-12 rounded-lg flex items-center justify-center"
+            style={getCategoryGradientStyle()}
+          >
+            <div className="w-6 h-6 bg-white/30 rounded" />
+          </div>
+        )}
 
         <div className="w-10" />
       </header>
@@ -195,7 +268,7 @@ export default function ManualCheckIn() {
               </p>
             </div>
           </>
-        ) : selectedCategory && (
+        ) : step === "feeling" && selectedCategory ? (
           <>
             {/* Title */}
             <div className="text-center mb-6 animate-fade-in">
@@ -203,40 +276,43 @@ export default function ManualCheckIn() {
                 What best describes your {selectedCategory.title.toLowerCase()} feeling?
               </h1>
               <p className="text-muted-foreground text-sm">
-                Tap the emotion that resonates most
+                Select all that apply
               </p>
             </div>
 
             {/* Feelings Grid - Scrollable */}
             <div className="flex-1 overflow-y-auto pb-24 -mx-2 px-2">
               <div className="grid grid-cols-3 gap-3">
-                {selectedCategory.feelings.map((feeling, index) => (
-                  <button
-                    key={feeling}
-                    onClick={() => handleFeelingSelect(feeling)}
-                    className={`
-                      aspect-square rounded-full 
-                      ${selectedCategory.bubbleColor}
-                      flex items-center justify-center
-                      p-2 text-center
-                      transition-all duration-300 ease-out
-                      hover:scale-105 active:scale-95
-                      animate-fade-in
-                      ${selectedFeeling === feeling 
-                        ? "ring-4 ring-white/60 scale-105 shadow-lg" 
-                        : "shadow-md"
-                      }
-                    `}
-                    style={{
-                      animationDelay: `${index * 30}ms`,
-                      animationFillMode: "backwards",
-                    }}
-                  >
-                    <span className={`text-sm font-medium ${selectedCategory.bubbleTextColor} leading-tight`}>
-                      {feeling}
-                    </span>
-                  </button>
-                ))}
+                {selectedCategory.feelings.map((feeling, index) => {
+                  const isSelected = selectedFeelings.includes(feeling);
+                  return (
+                    <button
+                      key={feeling}
+                      onClick={() => toggleFeeling(feeling)}
+                      className={`
+                        aspect-square rounded-full 
+                        ${selectedCategory.bubbleColor}
+                        flex items-center justify-center
+                        p-2 text-center
+                        transition-all duration-300 ease-out
+                        hover:scale-105 active:scale-95
+                        animate-fade-in
+                        ${isSelected 
+                          ? "ring-4 ring-white/60 scale-105 shadow-lg" 
+                          : "shadow-md opacity-80 hover:opacity-100"
+                        }
+                      `}
+                      style={{
+                        animationDelay: `${index * 30}ms`,
+                        animationFillMode: "backwards",
+                      }}
+                    >
+                      <span className={`text-sm font-medium ${selectedCategory.bubbleTextColor} leading-tight`}>
+                        {feeling}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -247,32 +323,176 @@ export default function ManualCheckIn() {
             >
               <div className="flex items-center gap-4 max-w-sm mx-auto">
                 <div className="flex-1 bg-muted/80 backdrop-blur-sm rounded-full px-5 py-4">
-                  {selectedFeeling ? (
+                  {selectedFeelings.length > 0 ? (
                     <div>
-                      <p className="text-foreground font-medium text-sm">{selectedFeeling}</p>
+                      <p className="text-foreground font-medium text-sm">
+                        {selectedFeelings.length === 1 
+                          ? selectedFeelings[0] 
+                          : `${selectedFeelings.length} feelings selected`
+                        }
+                      </p>
                       <p className="text-muted-foreground text-xs">
                         feeling {selectedCategory.title.toLowerCase()}
                       </p>
                     </div>
                   ) : (
                     <p className="text-muted-foreground text-sm">
-                      Select an emotion above
+                      Select emotions above
                     </p>
                   )}
                 </div>
                 <Button
                   onClick={handleContinue}
-                  disabled={!selectedFeeling}
+                  disabled={selectedFeelings.length === 0}
                   size="icon"
                   className={`
                     w-14 h-14 rounded-full transition-all duration-300
-                    ${selectedFeeling 
+                    ${selectedFeelings.length > 0 
                       ? "bg-foreground text-background hover:bg-foreground/90" 
                       : "bg-muted text-muted-foreground"
                     }
                   `}
                 >
                   <ArrowRight className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+          </>
+        ) : step === "context" && selectedCategory && (
+          <>
+            {/* Feelings Summary */}
+            <div className="text-center mb-8 animate-fade-in">
+              <h1 className="text-3xl font-display font-light text-foreground mb-1 italic">
+                I'm feeling
+              </h1>
+              <p 
+                className="text-2xl font-display font-medium italic"
+                style={{ color: selectedCategory.id === "overwhelmed" ? "#f43f5e" 
+                  : selectedCategory.id === "activated" ? "#fbbf24"
+                  : selectedCategory.id === "drained" ? "#38bdf8"
+                  : "#34d399" 
+                }}
+              >
+                {selectedFeelings.join(", ").toLowerCase()}
+              </p>
+            </div>
+
+            {/* Add Journal Entry Card */}
+            <div className="mb-6 animate-fade-in" style={{ animationDelay: "100ms" }}>
+              <div className="bg-muted/60 backdrop-blur-sm rounded-2xl p-4 flex items-center justify-between">
+                <span className="text-foreground/80 text-sm">Add Journal Entry</span>
+                <div className="flex gap-2">
+                  <button className="w-10 h-10 rounded-full bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+                    <PenLine className="h-4 w-4" />
+                  </button>
+                  <button className="w-10 h-10 rounded-full bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+                    <Camera className="h-4 w-4" />
+                  </button>
+                  <button className="w-10 h-10 rounded-full bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+                    <Mic className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Scrollable Context Options */}
+            <div className="flex-1 overflow-y-auto pb-28 space-y-6">
+              {/* What are you doing? */}
+              <div className="animate-fade-in" style={{ animationDelay: "150ms" }}>
+                <h3 className="text-foreground/80 text-lg mb-3">What are you doing?</h3>
+                <div className="flex flex-wrap gap-2">
+                  <button className="w-10 h-10 rounded-full bg-muted/60 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+                    <Plus className="h-4 w-4" />
+                  </button>
+                  {contextOptions.activities.map((activity) => {
+                    const isSelected = selectedActivities.includes(activity);
+                    return (
+                      <button
+                        key={activity}
+                        onClick={() => toggleActivity(activity)}
+                        className={`
+                          px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200
+                          ${isSelected 
+                            ? "bg-foreground text-background" 
+                            : "bg-muted/60 text-foreground/80 hover:bg-muted"
+                          }
+                        `}
+                      >
+                        {activity}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Who are you with? */}
+              <div className="animate-fade-in" style={{ animationDelay: "200ms" }}>
+                <h3 className="text-foreground/80 text-lg mb-3">Who are you with?</h3>
+                <div className="flex flex-wrap gap-2">
+                  <button className="w-10 h-10 rounded-full bg-muted/60 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+                    <Plus className="h-4 w-4" />
+                  </button>
+                  {contextOptions.companions.map((companion) => {
+                    const isSelected = selectedCompanions.includes(companion);
+                    return (
+                      <button
+                        key={companion}
+                        onClick={() => toggleCompanion(companion)}
+                        className={`
+                          px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200
+                          ${isSelected 
+                            ? "bg-foreground text-background" 
+                            : "bg-muted/60 text-foreground/80 hover:bg-muted"
+                          }
+                        `}
+                      >
+                        {companion}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Where are you? */}
+              <div className="animate-fade-in" style={{ animationDelay: "250ms" }}>
+                <h3 className="text-foreground/80 text-lg mb-3">Where are you?</h3>
+                <div className="flex flex-wrap gap-2">
+                  <button className="w-10 h-10 rounded-full bg-muted/60 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+                    <Plus className="h-4 w-4" />
+                  </button>
+                  {contextOptions.locations.map((location) => {
+                    const isSelected = selectedLocations.includes(location);
+                    return (
+                      <button
+                        key={location}
+                        onClick={() => toggleLocation(location)}
+                        className={`
+                          px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200
+                          ${isSelected 
+                            ? "bg-foreground text-background" 
+                            : "bg-muted/60 text-foreground/80 hover:bg-muted"
+                          }
+                        `}
+                      >
+                        {location}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Action Bar */}
+            <div 
+              className="fixed bottom-0 left-0 right-0 px-6 pb-8 pt-4 bg-gradient-to-t from-background via-background to-transparent animate-fade-in"
+              style={{ animationDelay: "300ms" }}
+            >
+              <div className="flex items-center gap-3 max-w-sm mx-auto">
+                <Button
+                  onClick={handleCompleteCheckIn}
+                  className="flex-1 h-14 rounded-full bg-foreground text-background hover:bg-foreground/90 text-base font-medium"
+                >
+                  Complete check-in
                 </Button>
               </div>
             </div>
