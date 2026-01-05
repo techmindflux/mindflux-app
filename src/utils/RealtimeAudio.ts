@@ -66,6 +66,8 @@ export class RealtimeChat {
       // Get local audio and add track
       this.localStream = await navigator.mediaDevices.getUserMedia({
         audio: {
+          sampleRate: 24000,
+          channelCount: 1,
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
@@ -88,13 +90,18 @@ export class RealtimeChat {
         try {
           const event = JSON.parse(e.data);
           console.log("Received event:", event.type);
-          
-          // When session is created, trigger the initial greeting
-          if (event.type === "session.created" && !this.hasTriggeredGreeting) {
-            console.log("Session created, triggering greeting...");
-            this.triggerInitialGreeting();
+
+          // When session is created, configure server VAD + transcription, then trigger greeting
+          if (event.type === "session.created") {
+            console.log("Session created: sending session.update...");
+            this.sendSessionUpdate();
+
+            if (!this.hasTriggeredGreeting) {
+              console.log("Triggering initial greeting...");
+              this.triggerInitialGreeting();
+            }
           }
-          
+
           this.onMessageCallback(event);
         } catch (err) {
           console.error("Failed to parse event:", err);
@@ -144,6 +151,34 @@ export class RealtimeChat {
     }
   }
 
+  private sendSessionUpdate(): void {
+    if (!this.dc || this.dc.readyState !== "open") {
+      console.warn("Data channel not ready for session.update");
+      return;
+    }
+
+    const event = {
+      event_id: `evt_${Date.now()}`,
+      type: "session.update",
+      session: {
+        modalities: ["text", "audio"],
+        input_audio_transcription: { model: "whisper-1" },
+        turn_detection: {
+          type: "server_vad",
+          threshold: 0.5,
+          prefix_padding_ms: 300,
+          silence_duration_ms: 800,
+        },
+        input_audio_format: "pcm16",
+        output_audio_format: "pcm16",
+        temperature: 0.7,
+      },
+    };
+
+    console.log("Sending session.update");
+    this.dc.send(JSON.stringify(event));
+  }
+
   sendTextMessage(text: string): void {
     if (!this.dc || this.dc.readyState !== "open") {
       console.error("Data channel not ready");
@@ -173,16 +208,32 @@ export class RealtimeChat {
       console.error("Data channel not ready for greeting");
       return;
     }
-    
+
     if (this.hasTriggeredGreeting) {
       console.log("Greeting already triggered, skipping");
       return;
     }
 
     this.hasTriggeredGreeting = true;
-    console.log("Sending initial greeting request...");
+    console.log("Sending initial greeting user turn...");
 
-    // Simply request a response - the system prompt tells the AI to greet the user
+    // Create an explicit first user turn, then request Lumina's response.
+    // (Some sessions won't respond to response.create without a user item.)
+    const event = {
+      type: "conversation.item.create",
+      item: {
+        type: "message",
+        role: "user",
+        content: [
+          {
+            type: "input_text",
+            text: "Hi Lumina — please start with a warm greeting and ask me one question to begin my check-in.",
+          },
+        ],
+      },
+    };
+
+    this.dc.send(JSON.stringify(event));
     this.dc.send(JSON.stringify({ type: "response.create" }));
   }
 
