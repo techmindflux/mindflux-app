@@ -13,6 +13,7 @@ export class RealtimeChat {
   private audioEl: HTMLAudioElement;
   private localStream: MediaStream | null = null;
   private onMessageCallback: (message: RealtimeMessage) => void;
+  private hasTriggeredGreeting = false;
 
   constructor(onMessage: (message: RealtimeMessage) => void) {
     this.onMessageCallback = onMessage;
@@ -80,15 +81,20 @@ export class RealtimeChat {
       this.dc = this.pc.createDataChannel("oai-events");
 
       this.dc.addEventListener("open", () => {
-        console.log("Data channel opened");
-        // Trigger initial greeting from Lumina after connection
-        this.triggerInitialGreeting();
+        console.log("Data channel opened, waiting for session.created...");
       });
 
       this.dc.addEventListener("message", (e) => {
         try {
           const event = JSON.parse(e.data);
           console.log("Received event:", event.type);
+          
+          // When session is created, trigger the initial greeting
+          if (event.type === "session.created" && !this.hasTriggeredGreeting) {
+            console.log("Session created, triggering greeting...");
+            this.triggerInitialGreeting();
+          }
+          
           this.onMessageCallback(event);
         } catch (err) {
           console.error("Failed to parse event:", err);
@@ -167,30 +173,22 @@ export class RealtimeChat {
       console.error("Data channel not ready for greeting");
       return;
     }
+    
+    if (this.hasTriggeredGreeting) {
+      console.log("Greeting already triggered, skipping");
+      return;
+    }
 
-    console.log("Triggering initial greeting...");
+    this.hasTriggeredGreeting = true;
+    console.log("Sending initial greeting request...");
 
-    // Send a hidden user message to trigger Lumina's greeting
-    const event = {
-      type: "conversation.item.create",
-      item: {
-        type: "message",
-        role: "user",
-        content: [
-          {
-            type: "input_text",
-            text: "Hello, I'd like to start a stress check-in session. Please greet me warmly and ask how I'm feeling today.",
-          },
-        ],
-      },
-    };
-
-    this.dc.send(JSON.stringify(event));
+    // Simply request a response - the system prompt tells the AI to greet the user
     this.dc.send(JSON.stringify({ type: "response.create" }));
   }
 
   disconnect(): void {
     console.log("Disconnecting...");
+    this.hasTriggeredGreeting = false;
 
     if (this.localStream) {
       this.localStream.getTracks().forEach((track) => track.stop());
