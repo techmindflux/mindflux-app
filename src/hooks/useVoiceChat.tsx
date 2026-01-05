@@ -107,7 +107,7 @@ export function useVoiceChat(): UseVoiceChatReturn {
         "apikey": SUPABASE_KEY,
         "Authorization": `Bearer ${SUPABASE_KEY}`,
       },
-      body: JSON.stringify({ messages: currentMessages }),
+      body: JSON.stringify({ messages: currentMessages, isInitial: currentMessages.length === 0 }),
     });
 
     if (!response.ok) {

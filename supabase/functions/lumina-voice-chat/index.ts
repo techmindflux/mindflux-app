@@ -37,7 +37,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json();
+    const { messages, isInitial } = await req.json();
     const PERPLEXITY_API_KEY = Deno.env.get("PERPLEXITY_API_KEY");
 
     if (!PERPLEXITY_API_KEY) {
@@ -45,15 +45,28 @@ serve(async (req) => {
     }
 
     // Format messages for Perplexity API
-    const formattedMessages = [
+    // Perplexity requires last message to be user role
+    let formattedMessages = [
       { role: "system", content: SYSTEM_PROMPT },
-      ...messages.map((m: { role: string; content: string }) => ({
-        role: m.role,
-        content: m.content,
-      })),
     ];
 
-    console.log("Sending to Perplexity:", JSON.stringify({ messageCount: messages.length }));
+    if (isInitial || messages.length === 0) {
+      // For initial greeting, add a starter user message
+      formattedMessages.push({ 
+        role: "user", 
+        content: "Hello, I'd like to do a stress check-in. Please greet me warmly and ask how I'm feeling today." 
+      });
+    } else {
+      formattedMessages = [
+        ...formattedMessages,
+        ...messages.map((m: { role: string; content: string }) => ({
+          role: m.role,
+          content: m.content,
+        })),
+      ];
+    }
+
+    console.log("Sending to Perplexity:", JSON.stringify({ messageCount: formattedMessages.length, isInitial }));
 
     const response = await fetch("https://api.perplexity.ai/chat/completions", {
       method: "POST",
