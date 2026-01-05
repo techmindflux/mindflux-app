@@ -54,32 +54,45 @@ export function useVoiceConversation(): UseVoiceConversationReturn {
     return recognition;
   }, []);
 
-  // Speak via Web Speech (reliable fallback when TTS providers fail)
+  // Audio element ref for Cartesia playback
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Speak via Cartesia Sonic TTS
   const playAudio = useCallback(async (text: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       try {
-        if (!("speechSynthesis" in window)) {
-          reject(new Error("Text-to-speech not supported in this browser"));
-          return;
+        // Stop any previous audio
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current = null;
         }
 
-        // Cancel any previous utterances
-        window.speechSynthesis.cancel();
+        // Call Cartesia TTS edge function
+        const { data, error: fnError } = await supabase.functions.invoke("cartesia-tts", {
+          body: { text },
+        });
 
-        const utter = new SpeechSynthesisUtterance(text);
-        utter.rate = 0.95;
-        utter.pitch = 1.0;
-        utter.volume = 1.0;
+        if (fnError) throw fnError;
+        if (!data?.audioContent) throw new Error("No audio returned");
 
-        utter.onend = () => {
+        // Create audio from base64
+        const audioSrc = `data:audio/mp3;base64,${data.audioContent}`;
+        const audio = new Audio(audioSrc);
+        audioRef.current = audio;
+
+        audio.onended = () => {
+          audioRef.current = null;
           resolve();
         };
-        utter.onerror = (e) => {
-          reject(new Error((e as any)?.error || "Speech synthesis failed"));
+
+        audio.onerror = (e) => {
+          audioRef.current = null;
+          reject(new Error("Audio playback failed"));
         };
 
-        window.speechSynthesis.speak(utter);
+        await audio.play();
       } catch (err) {
+        console.error("Cartesia TTS error:", err);
         reject(err);
       }
     });
@@ -168,9 +181,10 @@ export function useVoiceConversation(): UseVoiceConversationReturn {
           // May already be stopped
         }
 
-        // Interrupt any ongoing speech
-        if ("speechSynthesis" in window) {
-          window.speechSynthesis.cancel();
+        // Interrupt any ongoing audio
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current = null;
         }
 
         // Process the input
@@ -266,8 +280,9 @@ export function useVoiceConversation(): UseVoiceConversationReturn {
       recognitionRef.current = null;
     }
 
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
     }
 
     setState("idle");
