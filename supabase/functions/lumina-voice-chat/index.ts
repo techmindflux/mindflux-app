@@ -89,7 +89,13 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "I'm here to listen. How are you feeling?";
+    const raw = data.choices?.[0]?.message?.content || "I'm here to listen. How are you feeling?";
+
+    // Remove Perplexity citation markers like [1][2]
+    const content = raw
+      .replace(/\[\d+\]/g, "")
+      .replace(/\s{2,}/g, " ")
+      .trim();
 
     console.log("Perplexity response received");
 

@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useVoiceChat } from "@/hooks/useVoiceChat";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Mic, X, Loader2 } from "lucide-react";
+import { Mic, X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Audio visualization component
