@@ -13,6 +13,7 @@ import Reflect from "./pages/Reflect";
 import CheckInOptions from "./pages/CheckInOptions";
 import VoiceCheckIn from "./pages/VoiceCheckIn";
 import ManualCheckIn from "./pages/ManualCheckIn";
+import WellnessWall from "./pages/WellnessWall";
 import LuminaChat from "./pages/LuminaChat";
 import NotFound from "./pages/NotFound";
 
@@ -37,6 +38,7 @@ const App = () => (
               <Route path="/check-in" element={<CheckInOptions />} />
               <Route path="/check-in/voice" element={<VoiceCheckIn />} />
               <Route path="/check-in/manual" element={<ManualCheckIn />} />
+              <Route path="/wellness-wall" element={<WellnessWall />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

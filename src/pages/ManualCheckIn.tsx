@@ -156,15 +156,13 @@ export default function ManualCheckIn() {
   };
 
   const handleCompleteCheckIn = () => {
-    // TODO: Save check-in data to database
-    console.log("Check-in complete:", {
-      category: selectedCategory?.id,
-      feelings: selectedFeelings,
-      activities: selectedActivities,
-      companions: selectedCompanions,
-      locations: selectedLocations,
+    // Navigate to wellness wall with check-in data
+    navigate("/wellness-wall", {
+      state: {
+        category: selectedCategory?.id,
+        feelings: selectedFeelings,
+      },
     });
-    navigate("/");
   };
 
   const getCategoryGradientStyle = () => {
