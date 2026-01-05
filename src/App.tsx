@@ -10,6 +10,7 @@ import Auth from "./pages/Auth";
 import Home from "./pages/Home";
 import Explore from "./pages/Explore";
 import Reflect from "./pages/Reflect";
+import CheckIn from "./pages/CheckIn";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
                 <Route path="/explore" element={<Explore />} />
                 <Route path="/reflect" element={<Reflect />} />
               </Route>
+              <Route path="/check-in" element={<CheckIn />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
