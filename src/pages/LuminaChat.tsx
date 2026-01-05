@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Send, Sparkles, Leaf, Wind, ExternalLink, BookOpen, Video, Headphones, FileText } from "lucide-react";
+import { ArrowLeft, Send, Sparkles, Leaf, Wind, ExternalLink, BookOpen, Video, Headphones, FileText, Moon, Heart, Brain, Smile, Users, Coffee, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -236,6 +236,34 @@ export default function LuminaChat() {
     { label: "Grounding exercise", icon: Leaf },
   ];
 
+  const topicCards = [
+    { 
+      shortcut: "/sleep",
+      icon: Moon,
+      title: "Improve my sleep quality and wind down for better rest tonight"
+    },
+    { 
+      shortcut: "/anxiety",
+      icon: Brain,
+      title: "Help me manage anxious thoughts and find calm"
+    },
+    { 
+      shortcut: "/motivation",
+      icon: Zap,
+      title: "Boost my motivation when I'm feeling stuck or unmotivated"
+    },
+    { 
+      shortcut: "/self-care",
+      icon: Heart,
+      title: "Create a self-care routine that works for my lifestyle"
+    },
+  ];
+
+  const handleTopicClick = (topic: typeof topicCards[0]) => {
+    setInput(topic.title);
+    inputRef.current?.focus();
+  };
+
   return (
     <div className="relative min-h-screen flex flex-col bg-background">
       {/* Ambient background effects */}
@@ -311,10 +339,11 @@ export default function LuminaChat() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Quick actions (show when no messages or after greeting) */}
+      {/* Quick actions and topic cards (show when no messages or after greeting) */}
       {messages.length <= 1 && (
-        <div className="px-4 pb-2">
-          <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="px-4 pb-4 space-y-4">
+          {/* Quick action pills */}
+          <div className="flex gap-2 overflow-x-auto pb-1">
             {quickActions.map((action) => (
               <button
                 key={action.label}
@@ -326,6 +355,27 @@ export default function LuminaChat() {
               >
                 <action.icon className="w-4 h-4" />
                 {action.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Mental health topic cards */}
+          <div className="grid grid-cols-2 gap-3">
+            {topicCards.map((topic) => (
+              <button
+                key={topic.shortcut}
+                onClick={() => handleTopicClick(topic)}
+                className="group text-left p-4 rounded-2xl glass-card border border-border/30 hover:border-primary/40 transition-all duration-200 hover:scale-[1.02]"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
+                    <topic.icon className="w-4 h-4 text-primary" />
+                  </div>
+                  <span className="text-xs font-medium text-primary">{topic.shortcut}</span>
+                </div>
+                <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors line-clamp-2 leading-relaxed">
+                  {topic.title}
+                </p>
               </button>
             ))}
           </div>
