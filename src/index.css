@@ -317,6 +317,10 @@
   .delay-300 { animation-delay: 300ms; }
   .delay-400 { animation-delay: 400ms; }
   .delay-500 { animation-delay: 500ms; }
+
+  .animate-sound-wave {
+    animation: soundWave 0.8s ease-in-out infinite;
+  }
 }
 
 @keyframes fadeIn {
@@ -359,4 +363,11 @@
 @keyframes breathe {
   0%, 100% { transform: scale(1); opacity: 0.4; }
   50% { transform: scale(1.1); opacity: 0.6; }
+}
+
+@keyframes soundWave {
+  0%, 100% { height: 8px; }
+  25% { height: 24px; }
+  50% { height: 16px; }
+  75% { height: 28px; }
 }

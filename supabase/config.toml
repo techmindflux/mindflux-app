@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.lumina-search]
 verify_jwt = false
+
+[functions.lumina-voice-chat]
+verify_jwt = false
