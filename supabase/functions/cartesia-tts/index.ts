@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -36,7 +37,7 @@ serve(async (req) => {
         transcript: text,
         voice: {
           mode: "id",
-          id: "79a125e8-cd45-4c13-8a67-188112f4dd22", // Female warm voice
+          id: "79a125e8-cd45-4c13-8a67-188112f4dd22",
         },
         output_format: {
           container: "mp3",
@@ -50,15 +51,13 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Cartesia TTS error:", response.status, errorText);
-      throw new Error(`TTS failed: ${response.status}`);
+      throw new Error(`TTS failed: ${response.status} - ${errorText}`);
     }
 
     const audioBuffer = await response.arrayBuffer();
-    const base64Audio = btoa(
-      String.fromCharCode(...new Uint8Array(audioBuffer))
-    );
+    const base64Audio = base64Encode(audioBuffer);
 
-    console.log("Cartesia TTS generated successfully");
+    console.log("Cartesia TTS generated successfully, size:", audioBuffer.byteLength);
 
     return new Response(JSON.stringify({ audioContent: base64Audio }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
