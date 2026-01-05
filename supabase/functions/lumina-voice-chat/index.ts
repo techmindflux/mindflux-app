@@ -45,25 +45,42 @@ serve(async (req) => {
     }
 
     // Format messages for Perplexity API
-    // Perplexity requires last message to be user role
-    let formattedMessages = [
+    // Perplexity requires user/tool and assistant messages to alternate (after optional system messages)
+    const normalizeMessages = (msgs: Array<{ role: string; content: string }>) => {
+      const out: Array<{ role: "user" | "assistant"; content: string }> = [];
+
+      for (const m of msgs || []) {
+        const role = m?.role === "user" || m?.role === "assistant" ? m.role : null;
+        const content = (m?.content || "").trim();
+        if (!role || !content) continue;
+
+        // Perplexity expects the first non-system message to be from the user
+        if (out.length === 0 && role !== "user") continue;
+
+        const last = out[out.length - 1];
+        if (last && last.role === role) {
+          // Merge consecutive same-role messages to enforce alternation
+          last.content = `${last.content}\n${content}`.trim();
+        } else {
+          out.push({ role, content });
+        }
+      }
+
+      return out;
+    };
+
+    let formattedMessages: Array<{ role: string; content: string }> = [
       { role: "system", content: SYSTEM_PROMPT },
     ];
 
-    if (isInitial || messages.length === 0) {
+    if (isInitial || !Array.isArray(messages) || messages.length === 0) {
       // For initial greeting, add a starter user message
-      formattedMessages.push({ 
-        role: "user", 
-        content: "Hello, I'd like to do a stress check-in. Please greet me warmly and ask how I'm feeling today." 
+      formattedMessages.push({
+        role: "user",
+        content: "Hello, I'd like to do a stress check-in. Please greet me warmly and ask how I'm feeling today.",
       });
     } else {
-      formattedMessages = [
-        ...formattedMessages,
-        ...messages.map((m: { role: string; content: string }) => ({
-          role: m.role,
-          content: m.content,
-        })),
-      ];
+      formattedMessages = [...formattedMessages, ...normalizeMessages(messages)];
     }
 
     console.log("Sending to Perplexity:", JSON.stringify({ messageCount: formattedMessages.length, isInitial }));
