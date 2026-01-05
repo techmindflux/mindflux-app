@@ -94,7 +94,7 @@ export default function Home() {
           {/* Circle container */}
           <div 
             className="relative w-52 h-52 rounded-full glass-card flex items-center justify-center cursor-pointer group transition-all duration-300 hover:scale-[1.02]"
-            onClick={() => {/* TODO: Navigate to stress check-in */}}
+            onClick={() => navigate("/check-in")}
           >
             {/* Subtle glow effect */}
             <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/20 via-transparent to-accent/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -160,7 +160,7 @@ export default function Home() {
           <Button 
             variant="secondary" 
             className="mt-8 rounded-xl h-12 px-8 font-medium"
-            onClick={() => {/* TODO: Navigate to stress check-in */}}
+            onClick={() => navigate("/check-in")}
           >
             {lastStressScore !== null ? "Check in again" : "Begin Check-in"}
           </Button>
