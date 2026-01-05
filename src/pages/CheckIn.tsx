@@ -54,13 +54,8 @@ export default function CheckIn() {
     }
   }, [isAuthenticated, authLoading, navigate]);
 
-  // Auto-start session when component mounts (skip intro screen)
-  useEffect(() => {
-    if (isAuthenticated && !authLoading && !hasStarted) {
-      setHasStarted(true);
-      startSession();
-    }
-  }, [isAuthenticated, authLoading, hasStarted, startSession]);
+  // Start session only from a user gesture (required for voice output)
+  // We trigger this from the mic button on first tap.
 
   // Auto-scroll to latest message
   useEffect(() => {
@@ -187,7 +182,14 @@ export default function CheckIn() {
       <div className="fixed bottom-0 left-0 right-0 z-20 flex flex-col items-center pb-12 pt-8 bg-gradient-to-t from-background via-background/95 to-transparent">
         {/* Mic button */}
         <button
-          onClick={toggleRecording}
+          onClick={async () => {
+            if (!hasStarted) {
+              setHasStarted(true);
+              await startSession();
+              return;
+            }
+            await toggleRecording();
+          }}
           disabled={isLoading || isSpeaking}
           className={cn(
             "w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 mb-4",
@@ -196,7 +198,7 @@ export default function CheckIn() {
               : "bg-foreground/10 border-2 border-foreground/20 hover:bg-foreground/15 hover:scale-105",
             (isLoading || isSpeaking) && "opacity-50 cursor-not-allowed"
           )}
-          aria-label={isRecording ? "Stop recording" : "Start recording"}
+          aria-label={!hasStarted ? "Start session" : isRecording ? "Stop recording" : "Start recording"}
         >
           <Mic className={cn(
             "w-8 h-8",
@@ -206,7 +208,7 @@ export default function CheckIn() {
         
         {/* Hint text */}
         <p className="text-sm text-muted-foreground">
-          {isRecording ? "Tap to send" : isSpeaking ? "Listening..." : isLoading ? "Processing..." : "Tap to speak"}
+          {!hasStarted ? "Tap to start" : isRecording ? "Listening..." : isSpeaking ? "Listening..." : isLoading ? "Processing..." : "Tap to speak"}
         </p>
 
         {/* End conversation link */}
