@@ -257,6 +257,26 @@ export default function LuminaChat() {
       icon: Heart,
       title: "Create a self-care routine that works for my lifestyle"
     },
+    { 
+      shortcut: "/focus",
+      icon: Coffee,
+      title: "Improve my concentration and stay focused on what matters"
+    },
+    { 
+      shortcut: "/relationships",
+      icon: Users,
+      title: "Navigate difficult conversations and improve my connections"
+    },
+    { 
+      shortcut: "/mood",
+      icon: Smile,
+      title: "Understand my emotions and lift my mood today"
+    },
+    { 
+      shortcut: "/mindfulness",
+      icon: Leaf,
+      title: "Practice being present and reduce overthinking"
+    },
   ];
 
   const handleTopicClick = (topic: typeof topicCards[0]) => {
@@ -359,25 +379,35 @@ export default function LuminaChat() {
             ))}
           </div>
 
-          {/* Mental health topic cards */}
-          <div className="grid grid-cols-2 gap-3">
-            {topicCards.map((topic) => (
-              <button
-                key={topic.shortcut}
-                onClick={() => handleTopicClick(topic)}
-                className="group text-left p-4 rounded-2xl glass-card border border-border/30 hover:border-primary/40 transition-all duration-200 hover:scale-[1.02]"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
-                    <topic.icon className="w-4 h-4 text-primary" />
+          {/* Mental health topic cards - horizontal scroll with staggered animation */}
+          <div className="relative">
+            <p className="text-xs text-muted-foreground mb-3 flex items-center gap-1.5">
+              <Sparkles className="w-3 h-3 text-primary animate-pulse" />
+              Explore topics
+            </p>
+            <div className="flex gap-3 overflow-x-auto pb-3 -mx-4 px-4 scrollbar-hide">
+              {topicCards.map((topic, index) => (
+                <button
+                  key={topic.shortcut}
+                  onClick={() => handleTopicClick(topic)}
+                  className="group flex-shrink-0 w-[160px] text-left p-4 rounded-2xl glass-card border border-border/30 hover:border-primary/40 transition-all duration-300 hover:scale-[1.03] animate-fade-in"
+                  style={{ 
+                    animationDelay: `${index * 80}ms`,
+                    animationFillMode: 'backwards'
+                  }}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                      <topic.icon className="w-4 h-4 text-primary" />
+                    </div>
+                    <span className="text-xs font-medium text-primary">{topic.shortcut}</span>
                   </div>
-                  <span className="text-xs font-medium text-primary">{topic.shortcut}</span>
-                </div>
-                <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors line-clamp-2 leading-relaxed">
-                  {topic.title}
-                </p>
-              </button>
-            ))}
+                  <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors line-clamp-2 leading-relaxed">
+                    {topic.title}
+                  </p>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
