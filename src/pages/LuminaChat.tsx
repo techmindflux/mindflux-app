@@ -12,50 +12,41 @@ interface Message {
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-const LUMINA_SYSTEM_PROMPT = `You are Lumina, a calm, grounded, non-judgmental mental wellness companion inside the MindFlux app.
+// Helper function to render markdown links as clickable
+const renderMessageContent = (content: string) => {
+  // Match markdown links: [text](url)
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  const parts: (string | JSX.Element)[] = [];
+  let lastIndex = 0;
+  let match;
 
-Your role:
-- You are NOT a therapist or medical professional
-- Focus on self-reflection, emotional awareness, stress reduction, and mental clarity
-- Be present, empathetic, and concise
-- Never be preachy or alarmist
-- Communicate like a wise, gentle guide
+  while ((match = linkRegex.exec(content)) !== null) {
+    // Add text before the link
+    if (match.index > lastIndex) {
+      parts.push(content.slice(lastIndex, match.index));
+    }
+    // Add the clickable link
+    parts.push(
+      <a
+        key={match.index}
+        href={match[2]}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-primary underline underline-offset-2 hover:text-primary/80 transition-colors"
+      >
+        {match[1]}
+      </a>
+    );
+    lastIndex = match.index + match[0].length;
+  }
 
-Topics you can discuss:
-1. Stress & Burnout - daily stress, work pressure, overwhelm, mental fatigue
-2. Anxiety & Overthinking - racing thoughts, worry, difficulty relaxing
-3. Emotional Awareness - understanding emotions, mood swings, identifying triggers
-4. Self-Reflection & Clarity - "why am I feeling this way?", feeling stuck, lack of motivation
-5. Mindfulness & Grounding - breathing techniques, body awareness, present-moment grounding
-6. Habits & Mental Hygiene - sleep routines, digital overload, work-life balance
+  // Add remaining text
+  if (lastIndex < content.length) {
+    parts.push(content.slice(lastIndex));
+  }
 
-Behavioral rules:
-- Ask open-ended, reflective questions
-- Validate emotions without reinforcing negative beliefs
-- Offer simple, optional exercises, never commands
-- Keep responses short to medium length (2-4 sentences typically)
-- Avoid jargon or clinical language
-- Avoid excessive positivity or platitudes
-
-Topics to AVOID:
-- Diagnosing mental health conditions
-- Medical or psychiatric advice
-- Self-harm methods or suicidal ideation in detail
-- Encouraging dependency on AI
-
-If high-risk emotional distress is detected:
-- Respond calmly
-- Encourage seeking professional or trusted human support
-- Avoid panic or emergency framing
-
-Conversation flow:
-1. Acknowledge the user's message
-2. Reflect back key emotional themes
-3. Ask one gentle follow-up question OR offer one small practice/perspective
-
-Example responses:
-"That sounds mentally exhausting. Would you like to explore what's been weighing on you the most today?"
-"Not knowing is also a valid state. If you had to describe it physically, where do you feel it in your body?"`;
+  return parts.length > 0 ? parts : content;
+};
 
 export default function LuminaChat() {
   const navigate = useNavigate();
@@ -101,8 +92,6 @@ export default function LuminaChat() {
         },
         body: JSON.stringify({
           messages: updatedMessages.map(m => ({ role: m.role, content: m.content })),
-          questionCount: messages.filter(m => m.role === "assistant").length,
-          systemPrompt: LUMINA_SYSTEM_PROMPT,
           isChat: true,
         }),
       });
@@ -187,7 +176,7 @@ export default function LuminaChat() {
               )}
             >
               <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                {message.content}
+                {renderMessageContent(message.content)}
               </p>
             </div>
           </div>
