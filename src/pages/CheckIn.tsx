@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useVoiceConversation } from "@/hooks/useVoiceConversation";
 import { Button } from "@/components/ui/button";
-import { Mic, X, MicOff } from "lucide-react";
+import { X, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Animated orb component
@@ -126,14 +126,6 @@ export default function CheckIn() {
     navigate("/home");
   };
 
-  const handleToggle = () => {
-    if (isActive) {
-      stop();
-    } else {
-      start();
-    }
-  };
-
   // Get the last assistant message for display
   const lastAssistantMessage = messages.filter((m) => m.role === "assistant").slice(-1)[0];
 
@@ -204,45 +196,47 @@ export default function CheckIn() {
 
       {/* Bottom controls */}
       <div className="fixed bottom-0 left-0 right-0 z-20 flex flex-col items-center pb-12 pt-8 bg-gradient-to-t from-background via-background to-transparent">
-        {/* Mic button */}
-        <button
-          onClick={handleToggle}
-          disabled={state === "thinking" || state === "speaking"}
-          className={cn(
-            "w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 mb-4",
-            isActive
-              ? "bg-destructive/90 hover:bg-destructive text-destructive-foreground shadow-lg shadow-destructive/20"
-              : "bg-foreground/10 border-2 border-foreground/20 hover:bg-foreground/15 hover:border-foreground/30 hover:scale-105",
-            (state === "thinking" || state === "speaking") && "opacity-70 cursor-not-allowed"
-          )}
-          aria-label={isActive ? "End session" : "Start session"}
-        >
-          {isActive ? (
-            <MicOff className="w-7 h-7" />
-          ) : (
-            <Mic className="w-7 h-7 text-foreground" />
-          )}
-        </button>
+        {!isActive ? (
+          <>
+            {/* Start button */}
+            <button
+              onClick={start}
+              className="group px-8 py-4 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-all duration-300 hover:scale-105 shadow-lg shadow-primary/20 flex items-center gap-3"
+            >
+              <Sparkles className="w-5 h-5" />
+              Start conversation
+            </button>
+            <p className="text-sm text-muted-foreground mt-4">
+              Talk naturally — Lumina is always listening
+            </p>
+          </>
+        ) : (
+          <>
+            {/* Status indicator during conversation */}
+            <div className="flex items-center gap-2 mb-4">
+              <div
+                className={cn(
+                  "w-3 h-3 rounded-full",
+                  state === "listening" && "bg-accent animate-pulse",
+                  state === "thinking" && "bg-muted-foreground animate-pulse",
+                  state === "speaking" && "bg-primary animate-pulse"
+                )}
+              />
+              <span className="text-sm text-muted-foreground">
+                {state === "listening" && "Listening..."}
+                {state === "thinking" && "Thinking..."}
+                {state === "speaking" && "Speaking..."}
+              </span>
+            </div>
 
-        {/* Hint text */}
-        <p className="text-sm text-muted-foreground">
-          {state === "thinking"
-            ? "Processing..."
-            : state === "speaking"
-            ? "Lumina is speaking"
-            : isActive
-            ? "Tap to end"
-            : "Tap to begin"}
-        </p>
-
-        {/* End link */}
-        {isActive && (
-          <button
-            onClick={handleEnd}
-            className="mt-6 text-sm text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4"
-          >
-            End conversation
-          </button>
+            {/* End button */}
+            <button
+              onClick={handleEnd}
+              className="px-6 py-3 rounded-full border border-muted-foreground/30 text-muted-foreground hover:text-foreground hover:border-foreground/50 transition-all duration-300"
+            >
+              End conversation
+            </button>
+          </>
         )}
       </div>
     </div>
