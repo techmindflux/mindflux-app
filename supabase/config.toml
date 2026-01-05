@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.openai-realtime-token]
 verify_jwt = false
+
+[functions.cartesia-tts]
+verify_jwt = false
