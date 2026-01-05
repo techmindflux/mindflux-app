@@ -234,13 +234,16 @@ export default function LuminaChat() {
     { label: "I feel stressed", icon: Wind },
     { label: "Help me reflect", icon: Sparkles },
     { label: "Grounding exercise", icon: Leaf },
+    { label: "Can't sleep", icon: Moon },
+    { label: "Feeling anxious", icon: Brain },
+    { label: "Need motivation", icon: Zap },
   ];
 
   const topicCards = [
     { 
       shortcut: "/sleep",
       icon: Moon,
-      title: "Improve my sleep quality and wind down for better rest tonight"
+      title: "Improve my sleep quality and wind down for better rest"
     },
     { 
       shortcut: "/anxiety",
@@ -248,29 +251,14 @@ export default function LuminaChat() {
       title: "Help me manage anxious thoughts and find calm"
     },
     { 
-      shortcut: "/motivation",
-      icon: Zap,
-      title: "Boost my motivation when I'm feeling stuck or unmotivated"
+      shortcut: "/focus",
+      icon: Coffee,
+      title: "Improve my concentration and stay focused"
     },
     { 
       shortcut: "/self-care",
       icon: Heart,
-      title: "Create a self-care routine that works for my lifestyle"
-    },
-    { 
-      shortcut: "/focus",
-      icon: Coffee,
-      title: "Improve my concentration and stay focused on what matters"
-    },
-    { 
-      shortcut: "/relationships",
-      icon: Users,
-      title: "Navigate difficult conversations and improve my connections"
-    },
-    { 
-      shortcut: "/mood",
-      icon: Smile,
-      title: "Understand my emotions and lift my mood today"
+      title: "Create a self-care routine that works for me"
     },
     { 
       shortcut: "/mindfulness",
@@ -278,6 +266,14 @@ export default function LuminaChat() {
       title: "Practice being present and reduce overthinking"
     },
   ];
+
+  const [cardsVisible, setCardsVisible] = useState(false);
+
+  useEffect(() => {
+    // Trigger staggered animation after mount
+    const timer = setTimeout(() => setCardsVisible(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleTopicClick = (topic: typeof topicCards[0]) => {
     setInput(topic.title);
@@ -379,21 +375,26 @@ export default function LuminaChat() {
             ))}
           </div>
 
-          {/* Mental health topic cards - horizontal scroll with staggered animation */}
+          {/* Mental health topic cards - neat 2x2 grid with staggered fade-in */}
           <div className="relative">
             <p className="text-xs text-muted-foreground mb-3 flex items-center gap-1.5">
               <Sparkles className="w-3 h-3 text-primary animate-pulse" />
               Explore topics
             </p>
-            <div className="flex gap-3 overflow-x-auto pb-3 -mx-4 px-4 scrollbar-hide">
+            <div className="grid grid-cols-2 gap-3">
               {topicCards.map((topic, index) => (
                 <button
                   key={topic.shortcut}
                   onClick={() => handleTopicClick(topic)}
-                  className="group flex-shrink-0 w-[160px] text-left p-4 rounded-2xl glass-card border border-border/30 hover:border-primary/40 transition-all duration-300 hover:scale-[1.03] animate-fade-in"
+                  className={cn(
+                    "group text-left p-4 rounded-2xl glass-card border border-border/30 hover:border-primary/40 transition-all duration-300 hover:scale-[1.02]",
+                    cardsVisible 
+                      ? "opacity-100 translate-y-0" 
+                      : "opacity-0 translate-y-4"
+                  )}
                   style={{ 
-                    animationDelay: `${index * 80}ms`,
-                    animationFillMode: 'backwards'
+                    transitionDelay: `${index * 100}ms`,
+                    transitionProperty: 'opacity, transform, border-color, scale'
                   }}
                 >
                   <div className="flex items-center gap-2 mb-2">
