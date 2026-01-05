@@ -54,15 +54,18 @@ export default function CheckIn() {
     }
   }, [isAuthenticated, authLoading, navigate]);
 
+  // Auto-start session when component mounts (skip intro screen)
+  useEffect(() => {
+    if (isAuthenticated && !authLoading && !hasStarted) {
+      setHasStarted(true);
+      startSession();
+    }
+  }, [isAuthenticated, authLoading, hasStarted, startSession]);
+
   // Auto-scroll to latest message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
-  const handleStart = async () => {
-    setHasStarted(true);
-    await startSession();
-  };
 
   const handleEnd = () => {
     endSession();
@@ -120,40 +123,12 @@ export default function CheckIn() {
 
       {/* Main content */}
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 pb-40">
-        {!hasStarted ? (
-          /* Pre-start state */
-          <div className="flex flex-col items-center text-center animate-fade-in">
-            {/* Lumina avatar */}
-            <div className="relative w-32 h-32 mb-8">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 blur-xl" />
-              <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 border border-primary/20 flex items-center justify-center">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent opacity-80" />
-              </div>
-            </div>
-            
-            <h2 className="text-2xl font-display font-medium text-foreground mb-3">
-              Lumina
-            </h2>
-            <p className="text-muted-foreground max-w-[280px] mb-10 leading-relaxed">
-              Your mental wellness companion. Let's have a calming conversation about how you're feeling.
-            </p>
-            
-            <Button 
-              variant="primary" 
-              size="lg"
-              onClick={handleStart}
-              className="rounded-full px-8 h-14 text-base"
-            >
-              Start Conversation
-            </Button>
-          </div>
-        ) : (
-          /* Active conversation state */
-          <div className="flex flex-col items-center w-full max-w-md animate-fade-in">
-            {/* Central Lumina orb with wave visualization */}
-            <div className="relative mb-12">
-              {/* Outer glow ring */}
-              <div className={cn(
+        {/* Active conversation state - starts immediately */}
+        <div className="flex flex-col items-center w-full max-w-md animate-fade-in">
+          {/* Central Lumina orb with wave visualization */}
+          <div className="relative mb-12">
+            {/* Outer glow ring */}
+            <div className={cn(
                 "absolute inset-0 rounded-full transition-all duration-500",
                 isSpeaking 
                   ? "ring-[3px] ring-primary/40 scale-110" 
@@ -185,66 +160,63 @@ export default function CheckIn() {
               </div>
             </div>
 
-            {/* Audio waveform visualization */}
-            <div className="mb-8">
-              <AudioWaveform isActive={isRecording} isSpeaking={isSpeaking} />
-            </div>
-
-            {/* Message display */}
-            <div className="w-full min-h-[100px] flex items-center justify-center px-4 mb-8">
-              {lastAssistantMessage ? (
-                <p className="text-foreground text-center text-lg leading-relaxed animate-fade-in">
-                  {lastAssistantMessage.content}
-                </p>
-              ) : isLoading ? (
-                <p className="text-muted-foreground text-center">Lumina is thinking...</p>
-              ) : null}
-            </div>
-
-            {/* Error display */}
-            {error && (
-              <p className="text-destructive text-sm text-center mb-6 px-4">{error}</p>
-            )}
+          {/* Audio waveform visualization */}
+          <div className="mb-8">
+            <AudioWaveform isActive={isRecording} isSpeaking={isSpeaking} />
           </div>
-        )}
+
+          {/* Message display */}
+          <div className="w-full min-h-[100px] flex items-center justify-center px-4 mb-8">
+            {lastAssistantMessage ? (
+              <p className="text-foreground text-center text-lg leading-relaxed animate-fade-in">
+                {lastAssistantMessage.content}
+              </p>
+            ) : isLoading ? (
+              <p className="text-muted-foreground text-center">Lumina is thinking...</p>
+            ) : null}
+          </div>
+
+          {/* Error display */}
+          {error && (
+            <p className="text-destructive text-sm text-center mb-6 px-4">{error}</p>
+          )}
+        </div>
       </main>
 
       {/* Bottom controls - Fixed at bottom */}
-      {hasStarted && (
-        <div className="fixed bottom-0 left-0 right-0 z-20 flex flex-col items-center pb-12 pt-8 bg-gradient-to-t from-background via-background/95 to-transparent">
-          {/* Mic button */}
-          <button
-            onClick={toggleRecording}
-            disabled={isLoading || isSpeaking}
-            className={cn(
-              "w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 mb-4",
-              isRecording 
-                ? "bg-destructive text-destructive-foreground scale-110" 
-                : "bg-foreground/10 border-2 border-foreground/20 hover:bg-foreground/15 hover:scale-105",
-              (isLoading || isSpeaking) && "opacity-50 cursor-not-allowed"
-            )}
-            aria-label={isRecording ? "Stop recording" : "Start recording"}
-          >
-            <Mic className={cn(
-              "w-8 h-8",
-              isRecording ? "text-white" : "text-foreground"
-            )} />
-          </button>
-          
-          {/* Hint text */}
-          <p className="text-sm text-muted-foreground">
-            {isRecording ? "Tap to send" : isSpeaking ? "Listening..." : isLoading ? "Processing..." : "Tap to speak"}
-          </p>
+      <div className="fixed bottom-0 left-0 right-0 z-20 flex flex-col items-center pb-12 pt-8 bg-gradient-to-t from-background via-background/95 to-transparent">
+        {/* Mic button */}
+        <button
+          onClick={toggleRecording}
+          disabled={isLoading || isSpeaking}
+          className={cn(
+            "w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 mb-4",
+            isRecording 
+              ? "bg-destructive text-destructive-foreground scale-110" 
+              : "bg-foreground/10 border-2 border-foreground/20 hover:bg-foreground/15 hover:scale-105",
+            (isLoading || isSpeaking) && "opacity-50 cursor-not-allowed"
+          )}
+          aria-label={isRecording ? "Stop recording" : "Start recording"}
+        >
+          <Mic className={cn(
+            "w-8 h-8",
+            isRecording ? "text-white" : "text-foreground"
+          )} />
+        </button>
+        
+        {/* Hint text */}
+        <p className="text-sm text-muted-foreground">
+          {isRecording ? "Tap to send" : isSpeaking ? "Listening..." : isLoading ? "Processing..." : "Tap to speak"}
+        </p>
 
-          {/* End conversation link */}
-          <button 
-            onClick={handleEnd}
-            className="mt-6 text-sm text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4"
-          >
-            End conversation
-          </button>
-        </div>
-      )}
+        {/* End conversation link */}
+        <button 
+          onClick={handleEnd}
+          className="mt-6 text-sm text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4"
+        >
+          End conversation
+        </button>
+      </div>
     </div>
   );
 }
