@@ -25,10 +25,19 @@ export function useVoiceConversation(): UseVoiceConversationReturn {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
-  const isProcessingRef = useRef(false);
-  const isSpeakingRef = useRef(false);
+  const messagesRef = useRef<Message[]>([]);
+  const isActiveRef = useRef(false);
 
-  // Initialize speech recognition
+  // Keep refs in sync
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
+  useEffect(() => {
+    isActiveRef.current = isActive;
+  }, [isActive]);
+
+  // Initialize speech recognition with continuous listening
   const initRecognition = useCallback(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -38,7 +47,7 @@ export function useVoiceConversation(): UseVoiceConversationReturn {
     }
 
     const recognition = new SpeechRecognitionAPI();
-    recognition.continuous = false;
+    recognition.continuous = true;
     recognition.interimResults = false;
     recognition.lang = "en-US";
 
@@ -62,21 +71,15 @@ export function useVoiceConversation(): UseVoiceConversationReturn {
         utter.pitch = 1.0;
         utter.volume = 1.0;
 
-        utter.onstart = () => {
-          isSpeakingRef.current = true;
-        };
         utter.onend = () => {
-          isSpeakingRef.current = false;
           resolve();
         };
         utter.onerror = (e) => {
-          isSpeakingRef.current = false;
           reject(new Error((e as any)?.error || "Speech synthesis failed"));
         };
 
         window.speechSynthesis.speak(utter);
       } catch (err) {
-        isSpeakingRef.current = false;
         reject(err);
       }
     });
@@ -99,46 +102,10 @@ export function useVoiceConversation(): UseVoiceConversationReturn {
     []
   );
 
-  // Process a single turn: listen → think → speak → listen again
-  const processTurn = useCallback(async () => {
-    if (!recognitionRef.current || isProcessingRef.current) return;
-
-    isProcessingRef.current = true;
-    setState("listening");
-
-    try {
-      // Listen for user input
-      const userText = await new Promise<string>((resolve, reject) => {
-        const recognition = recognitionRef.current!;
-
-        recognition.onresult = (event) => {
-          const transcript = event.results[0][0].transcript;
-          resolve(transcript);
-        };
-
-        recognition.onerror = (event) => {
-          if (event.error === "no-speech") {
-            resolve(""); // Empty means no speech detected
-          } else {
-            reject(new Error(`Speech error: ${event.error}`));
-          }
-        };
-
-        recognition.onend = () => {
-          // If no result was triggered, resolve empty
-        };
-
-        recognition.start();
-      });
-
-      if (!userText.trim()) {
-        // No speech detected, restart listening
-        isProcessingRef.current = false;
-        if (isActive) {
-          setTimeout(() => processTurn(), 500);
-        }
-        return;
-      }
+  // Process user speech and respond
+  const processUserInput = useCallback(
+    async (userText: string) => {
+      if (!userText.trim()) return;
 
       // Add user message
       const userMessage: Message = { role: "user", content: userText };
@@ -146,31 +113,108 @@ export function useVoiceConversation(): UseVoiceConversationReturn {
 
       // Get AI response
       setState("thinking");
-      const aiResponse = await getAIResponse(
-        userText,
-        messages // Use current messages state
-      );
+      try {
+        const aiResponse = await getAIResponse(userText, messagesRef.current);
 
-      // Add assistant message
-      const assistantMessage: Message = { role: "assistant", content: aiResponse };
-      setMessages((prev) => [...prev, assistantMessage]);
+        // Add assistant message
+        const assistantMessage: Message = { role: "assistant", content: aiResponse };
+        setMessages((prev) => [...prev, assistantMessage]);
 
-      // Speak the response
-      setState("speaking");
-      await playAudio(aiResponse);
+        // Speak the response
+        setState("speaking");
+        await playAudio(aiResponse);
 
-      // Continue listening
-      isProcessingRef.current = false;
-      if (isActive) {
-        processTurn();
+        // Resume listening after speaking
+        if (isActiveRef.current && recognitionRef.current) {
+          setState("listening");
+          try {
+            recognitionRef.current.start();
+          } catch (e) {
+            // Already started, ignore
+          }
+        }
+      } catch (err) {
+        console.error("Response error:", err);
+        setError(err instanceof Error ? err.message : "An error occurred");
+        // Resume listening on error too
+        if (isActiveRef.current && recognitionRef.current) {
+          setState("listening");
+          try {
+            recognitionRef.current.start();
+          } catch (e) {
+            // Already started
+          }
+        }
       }
-    } catch (err) {
-      console.error("Turn error:", err);
-      setError(err instanceof Error ? err.message : "An error occurred");
-      isProcessingRef.current = false;
-      setState("idle");
+    },
+    [getAIResponse, playAudio]
+  );
+
+  // Start continuous listening
+  const startListening = useCallback(() => {
+    const recognition = recognitionRef.current;
+    if (!recognition) return;
+
+    recognition.onresult = (event: any) => {
+      // Get the latest result
+      const lastResultIndex = event.results.length - 1;
+      const transcript = event.results[lastResultIndex][0].transcript;
+
+      if (transcript.trim()) {
+        // Pause listening while processing
+        try {
+          recognition.stop();
+        } catch (e) {
+          // May already be stopped
+        }
+
+        // Interrupt any ongoing speech
+        if ("speechSynthesis" in window) {
+          window.speechSynthesis.cancel();
+        }
+
+        // Process the input
+        processUserInput(transcript);
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      if (event.error === "no-speech" || event.error === "aborted") {
+        // Normal, just restart
+        if (isActiveRef.current) {
+          setTimeout(() => {
+            try {
+              recognition.start();
+            } catch (e) {
+              // Already started
+            }
+          }, 100);
+        }
+      } else {
+        console.error("Speech error:", event.error);
+      }
+    };
+
+    recognition.onend = () => {
+      // Auto-restart if still active and not processing
+      if (isActiveRef.current) {
+        setTimeout(() => {
+          try {
+            recognition.start();
+          } catch (e) {
+            // Already started
+          }
+        }, 100);
+      }
+    };
+
+    setState("listening");
+    try {
+      recognition.start();
+    } catch (e) {
+      // Already started
     }
-  }, [getAIResponse, playAudio, messages, isActive]);
+  }, [processUserInput]);
 
   // Start conversation
   const start = useCallback(async () => {
@@ -195,34 +239,36 @@ export function useVoiceConversation(): UseVoiceConversationReturn {
       const assistantMessage: Message = { role: "assistant", content: greeting };
       setMessages([assistantMessage]);
 
-      // Speak greeting
+      // Speak greeting then start continuous listening
       setState("speaking");
       await playAudio(greeting);
 
-      // Start listening loop
-      processTurn();
+      // Begin always-listening mode
+      startListening();
     } catch (err) {
       console.error("Start error:", err);
       setError(err instanceof Error ? err.message : "Failed to start");
       setState("idle");
       setIsActive(false);
     }
-  }, [initRecognition, playAudio, processTurn]);
+  }, [initRecognition, playAudio, startListening]);
 
   // Stop conversation
   const stop = useCallback(() => {
     setIsActive(false);
-    isProcessingRef.current = false;
 
     if (recognitionRef.current) {
-      recognitionRef.current.abort();
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {
+        // Ignore
+      }
       recognitionRef.current = null;
     }
 
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
     }
-    isSpeakingRef.current = false;
 
     setState("idle");
   }, []);
