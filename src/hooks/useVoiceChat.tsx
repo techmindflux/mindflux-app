@@ -25,12 +25,7 @@ export function useVoiceChat(): UseVoiceChatReturn {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-
-  const recorderMimeRef = useRef<string>("audio/webm");
+  const speechRecognitionRef = useRef<any>(null);
 
   // Play TTS audio using Web Speech API
   const playAudio = useCallback(async (text: string) => {
@@ -67,30 +62,6 @@ export function useVoiceChat(): UseVoiceChatReturn {
       console.error("Speech synthesis error:", err);
       setIsSpeaking(false);
       setError("Speech synthesis failed.");
-    }
-  }, []);
-
-  // Transcribe audio using STT
-  const transcribe = useCallback(async (audioBase64: string, mimeType: string): Promise<string | null> => {
-    try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/lumina-stt`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${SUPABASE_KEY}`,
-        },
-        body: JSON.stringify({ audio: audioBase64, mimeType }),
-      });
-
-      if (!response.ok) throw new Error("STT failed");
-
-      const data = await response.json();
-      return data.text || null;
-    } catch (err) {
-      console.error("Transcription error:", err);
-      setError("Couldn't transcribe your audio. Please try again.");
-      return null;
     }
   }, []);
 
@@ -138,109 +109,91 @@ export function useVoiceChat(): UseVoiceChatReturn {
     }
   }, [sendToPerplexity, playAudio]);
 
-  // Toggle recording
+  // Toggle recording (Web Speech API STT)
   const toggleRecording = useCallback(async () => {
+    const SpeechRecognitionCtor =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognitionCtor) {
+      setError("Speech recognition isn't supported in this browser.");
+      return;
+    }
+
     if (isRecording) {
-      // Stop recording
-      const mediaRecorder = mediaRecorderRef.current;
-      
-      if (!mediaRecorder || mediaRecorder.state === "inactive") {
-        setIsRecording(false);
+      try {
+        speechRecognitionRef.current?.stop?.();
+      } catch {
+        // ignore
+      }
+      setIsRecording(false);
+      return;
+    }
+
+    setError(null);
+
+    const recognition = new SpeechRecognitionCtor();
+    speechRecognitionRef.current = recognition;
+
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+
+    recognition.onresult = async (event: any) => {
+      const transcript =
+        event?.results?.[0]?.[0]?.transcript?.trim?.() ?? "";
+
+      setIsRecording(false);
+
+      if (!transcript) {
+        setError("I didn't catch that—please try again.");
         return;
       }
 
-      return new Promise<void>((resolve) => {
-        mediaRecorder.onstop = async () => {
-          const mimeType = recorderMimeRef.current || "audio/webm";
-          const blob = new Blob(chunksRef.current, { type: mimeType });
-          mediaRecorder.stream.getTracks().forEach((track) => track.stop());
+      setIsLoading(true);
 
-          // Convert to base64
-          const reader = new FileReader();
-          reader.onloadend = async () => {
-            const base64 = (reader.result as string).split(",")[1];
+      const userMessage: Message = { role: "user", content: transcript };
+      const updatedMessages = [...messages, userMessage];
+      setMessages(updatedMessages);
 
-            setIsLoading(true);
-
-            // Transcribe
-            const transcript = await transcribe(base64, mimeType);
-
-            if (transcript) {
-              // Add user message
-              const userMessage: Message = { role: "user", content: transcript };
-              const updatedMessages = [...messages, userMessage];
-              setMessages(updatedMessages);
-
-              // Get AI response
-              try {
-                const response = await sendToPerplexity(updatedMessages);
-                const assistantMessage: Message = { role: "assistant", content: response };
-                setMessages((prev) => [...prev, assistantMessage]);
-
-                // Play response
-                await playAudio(response);
-              } catch (err) {
-                setError(err instanceof Error ? err.message : "Failed to get response");
-              }
-            }
-
-            setIsLoading(false);
-            resolve();
-          };
-          reader.readAsDataURL(blob);
-        };
-
-        mediaRecorder.stop();
-        setIsRecording(false);
-      });
-    } else {
-      // Start recording
       try {
-        setError(null);
-        chunksRef.current = [];
-
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-          },
-        });
-
-        const preferred = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"]; // mp4 for Safari
-        const supported = preferred.find((t) => (MediaRecorder as any).isTypeSupported?.(t));
-        const mimeType = supported || "";
-        recorderMimeRef.current = mimeType || "audio/webm";
-
-        const mediaRecorder = mimeType
-          ? new MediaRecorder(stream, { mimeType })
-          : new MediaRecorder(stream);
-
-        mediaRecorder.ondataavailable = (event) => {
-          if (event.data.size > 0) {
-            chunksRef.current.push(event.data);
-          }
-        };
-
-        mediaRecorderRef.current = mediaRecorder;
-        mediaRecorder.start(250);
-        setIsRecording(true);
+        const response = await sendToPerplexity(updatedMessages);
+        const assistantMessage: Message = { role: "assistant", content: response };
+        setMessages((prev) => [...prev, assistantMessage]);
+        await playAudio(response);
       } catch (err) {
-        setError("Could not access microphone. Please check permissions.");
-        console.error("Microphone access error:", err);
+        setError(err instanceof Error ? err.message : "Failed to get response");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("Speech recognition error:", event);
+      setIsRecording(false);
+      setError("Couldn't transcribe your speech. Please try again.");
+    };
+
+    try {
+      recognition.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Speech recognition start error:", err);
+      setIsRecording(false);
+      setError("Couldn't start speech recognition.");
+    }
+  }, [isRecording, messages, playAudio, sendToPerplexity]);
+
+  const endSession = useCallback(() => {
+    window.speechSynthesis.cancel();
+
+    if (speechRecognitionRef.current) {
+      try {
+        speechRecognitionRef.current.stop?.();
+      } catch {
+        // ignore
       }
     }
-  }, [isRecording, messages, transcribe, sendToPerplexity, playAudio]);
 
-  // End session
-  const endSession = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
-    }
     setMessages([]);
     setIsRecording(false);
     setIsSpeaking(false);
