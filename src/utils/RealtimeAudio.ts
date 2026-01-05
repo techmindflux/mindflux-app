@@ -81,6 +81,8 @@ export class RealtimeChat {
 
       this.dc.addEventListener("open", () => {
         console.log("Data channel opened");
+        // Trigger initial greeting from Lumina after connection
+        this.triggerInitialGreeting();
       });
 
       this.dc.addEventListener("message", (e) => {
@@ -151,6 +153,33 @@ export class RealtimeChat {
           {
             type: "input_text",
             text,
+          },
+        ],
+      },
+    };
+
+    this.dc.send(JSON.stringify(event));
+    this.dc.send(JSON.stringify({ type: "response.create" }));
+  }
+
+  private triggerInitialGreeting(): void {
+    if (!this.dc || this.dc.readyState !== "open") {
+      console.error("Data channel not ready for greeting");
+      return;
+    }
+
+    console.log("Triggering initial greeting...");
+
+    // Send a hidden user message to trigger Lumina's greeting
+    const event = {
+      type: "conversation.item.create",
+      item: {
+        type: "message",
+        role: "user",
+        content: [
+          {
+            type: "input_text",
+            text: "Hello, I'd like to start a stress check-in session. Please greet me warmly and ask how I'm feeling today.",
           },
         ],
       },
