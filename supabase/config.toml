@@ -1,1 +1,13 @@
 project_id = "kvbxthzpgpqzrjuwhhlw"
+
+[functions.lumina-chat]
+verify_jwt = false
+
+[functions.lumina-tts]
+verify_jwt = false
+
+[functions.lumina-stt]
+verify_jwt = false
+
+[functions.lumina-search]
+verify_jwt = false

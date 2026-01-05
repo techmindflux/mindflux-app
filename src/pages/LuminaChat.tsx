@@ -1,12 +1,20 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Send, Sparkles, Leaf, Wind } from "lucide-react";
+import { ArrowLeft, Send, Sparkles, Leaf, Wind, ExternalLink, BookOpen, Video, Headphones, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
+interface Source {
+  id: number;
+  url: string;
+  domain: string;
+  type: "video" | "book" | "podcast" | "article";
+}
 
 interface Message {
   role: "user" | "assistant";
   content: string;
+  sources?: Source[];
 }
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -14,18 +22,15 @@ const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 // Helper function to render markdown links as clickable
 const renderMessageContent = (content: string) => {
-  // Match markdown links: [text](url)
   const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
   const parts: (string | JSX.Element)[] = [];
   let lastIndex = 0;
   let match;
 
   while ((match = linkRegex.exec(content)) !== null) {
-    // Add text before the link
     if (match.index > lastIndex) {
       parts.push(content.slice(lastIndex, match.index));
     }
-    // Add the clickable link
     parts.push(
       <a
         key={match.index}
@@ -40,7 +45,6 @@ const renderMessageContent = (content: string) => {
     lastIndex = match.index + match[0].length;
   }
 
-  // Add remaining text
   if (lastIndex < content.length) {
     parts.push(content.slice(lastIndex));
   }
@@ -48,11 +52,63 @@ const renderMessageContent = (content: string) => {
   return parts.length > 0 ? parts : content;
 };
 
+// Source type icon component
+const SourceIcon = ({ type }: { type: Source["type"] }) => {
+  switch (type) {
+    case "video":
+      return <Video className="w-3.5 h-3.5" />;
+    case "book":
+      return <BookOpen className="w-3.5 h-3.5" />;
+    case "podcast":
+      return <Headphones className="w-3.5 h-3.5" />;
+    default:
+      return <FileText className="w-3.5 h-3.5" />;
+  }
+};
+
+// Perplexity-style source card
+const SourceCard = ({ source }: { source: Source }) => (
+  <a
+    href={source.url}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="group flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/50 hover:bg-muted border border-border/50 hover:border-primary/30 transition-all duration-200"
+  >
+    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary shrink-0">
+      <SourceIcon type={source.type} />
+    </div>
+    <span className="text-xs text-muted-foreground group-hover:text-foreground truncate max-w-[140px] transition-colors">
+      {source.domain}
+    </span>
+    <ExternalLink className="w-3 h-3 text-muted-foreground/50 group-hover:text-primary shrink-0 transition-colors" />
+  </a>
+);
+
+// Sources section component
+const SourcesSection = ({ sources }: { sources: Source[] }) => {
+  if (!sources || sources.length === 0) return null;
+
+  return (
+    <div className="mt-3 pt-3 border-t border-border/30">
+      <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1.5">
+        <Sparkles className="w-3 h-3" />
+        Sources
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {sources.map((source) => (
+          <SourceCard key={source.id} source={source} />
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export default function LuminaChat() {
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -65,13 +121,41 @@ export default function LuminaChat() {
   }, [messages]);
 
   useEffect(() => {
-    // Send initial greeting
     const greeting: Message = {
       role: "assistant",
       content: "Hello. I'm Lumina, your mental wellness companion. This is a safe space to explore how you're feeling. What's on your mind today?"
     };
     setMessages([greeting]);
   }, []);
+
+  // Function to search for sources using Perplexity
+  const searchSources = async (query: string): Promise<Source[]> => {
+    try {
+      setIsSearching(true);
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/lumina-search`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": SUPABASE_KEY,
+          "Authorization": `Bearer ${SUPABASE_KEY}`,
+        },
+        body: JSON.stringify({ query }),
+      });
+
+      if (!response.ok) {
+        console.error("Search failed");
+        return [];
+      }
+
+      const data = await response.json();
+      return data.sources || [];
+    } catch (error) {
+      console.error("Error searching sources:", error);
+      return [];
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -83,6 +167,7 @@ export default function LuminaChat() {
     setIsLoading(true);
 
     try {
+      // Get AI response
       const response = await fetch(`${SUPABASE_URL}/functions/v1/lumina-chat`, {
         method: "POST",
         headers: {
@@ -101,7 +186,30 @@ export default function LuminaChat() {
       }
 
       const data = await response.json();
-      const assistantMessage: Message = { role: "assistant", content: data.content };
+      
+      // Check if the response suggests resources or if we're past the initial exchange
+      const shouldSearchSources = 
+        data.content.toLowerCase().includes("here") ||
+        data.content.toLowerCase().includes("might help") ||
+        data.content.toLowerCase().includes("resource") ||
+        data.content.toLowerCase().includes("try") ||
+        data.content.toLowerCase().includes("suggest") ||
+        data.content.toLowerCase().includes("recommend") ||
+        updatedMessages.length >= 4; // After 2 exchanges, start providing sources
+
+      let sources: Source[] = [];
+      if (shouldSearchSources) {
+        // Create a search query from the conversation context
+        const userMessages = updatedMessages.filter(m => m.role === "user").map(m => m.content);
+        const searchQuery = userMessages.slice(-2).join(" "); // Use last 2 user messages for context
+        sources = await searchSources(searchQuery);
+      }
+
+      const assistantMessage: Message = { 
+        role: "assistant", 
+        content: data.content,
+        sources: sources.length > 0 ? sources : undefined
+      };
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
       console.error("Error sending message:", error);
@@ -178,11 +286,12 @@ export default function LuminaChat() {
               <p className="text-sm leading-relaxed whitespace-pre-wrap">
                 {renderMessageContent(message.content)}
               </p>
+              {message.sources && <SourcesSection sources={message.sources} />}
             </div>
           </div>
         ))}
 
-        {isLoading && (
+        {(isLoading || isSearching) && (
           <div className="flex justify-start animate-fade-in">
             <div className="glass-card rounded-2xl rounded-bl-md px-4 py-3">
               <div className="flex items-center gap-2">
@@ -191,7 +300,9 @@ export default function LuminaChat() {
                   <span className="w-2 h-2 bg-primary/60 rounded-full animate-pulse delay-100" />
                   <span className="w-2 h-2 bg-primary/60 rounded-full animate-pulse delay-200" />
                 </div>
-                <span className="text-xs text-muted-foreground">Lumina is thinking...</span>
+                <span className="text-xs text-muted-foreground">
+                  {isSearching ? "Finding resources..." : "Lumina is thinking..."}
+                </span>
               </div>
             </div>
           </div>
