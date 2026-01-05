@@ -74,9 +74,7 @@ export default function WellnessWall() {
     fetchRecommendations();
   }, [checkInData]);
 
-  const handleOpenVideo = (url: string) => {
-    window.open(url, "_blank", "noopener,noreferrer");
-  };
+  // No longer needed - using anchor tags instead
 
   const getCategoryColor = () => {
     switch (checkInData?.category) {
@@ -161,16 +159,18 @@ export default function WellnessWall() {
                 const IconComponent = config.icon;
                 
                 return (
-                  <button
+                  <a
                     key={rec.id}
-                    onClick={() => handleOpenVideo(rec.youtubeUrl)}
+                    href={rec.youtubeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className={`
-                      group relative overflow-hidden rounded-2xl p-4 text-left
+                      group relative overflow-hidden rounded-2xl p-4 text-left block
                       bg-gradient-to-br ${config.gradient}
                       shadow-lg hover:shadow-xl
                       transition-all duration-300 ease-out
                       hover:scale-[1.02] active:scale-[0.98]
-                      animate-fade-in
+                      animate-fade-in no-underline
                     `}
                     style={{
                       animationDelay: `${index * 80}ms`,
@@ -204,7 +204,7 @@ export default function WellnessWall() {
                         </p>
                       </div>
                     </div>
-                  </button>
+                  </a>
                 );
               })}
             </div>
