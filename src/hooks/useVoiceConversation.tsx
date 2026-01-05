@@ -57,44 +57,44 @@ export function useVoiceConversation(): UseVoiceConversationReturn {
   // Audio element ref for Cartesia playback
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Speak via Cartesia Sonic TTS
-  const playAudio = useCallback(async (text: string): Promise<void> => {
-    return new Promise(async (resolve, reject) => {
-      try {
-        // Stop any previous audio
-        if (audioRef.current) {
-          audioRef.current.pause();
-          audioRef.current = null;
-        }
+  // Fetch audio from Cartesia TTS (without playing)
+  const fetchAudio = useCallback(async (text: string): Promise<HTMLAudioElement> => {
+    // Stop any previous audio
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
 
-        // Call Cartesia TTS edge function
-        const { data, error: fnError } = await supabase.functions.invoke("cartesia-tts", {
-          body: { text },
-        });
+    // Call Cartesia TTS edge function
+    const { data, error: fnError } = await supabase.functions.invoke("cartesia-tts", {
+      body: { text },
+    });
 
-        if (fnError) throw fnError;
-        if (!data?.audioContent) throw new Error("No audio returned");
+    if (fnError) throw fnError;
+    if (!data?.audioContent) throw new Error("No audio returned");
 
-        // Create audio from base64
-        const audioSrc = `data:audio/mp3;base64,${data.audioContent}`;
-        const audio = new Audio(audioSrc);
-        audioRef.current = audio;
+    // Create audio from base64
+    const audioSrc = `data:audio/mp3;base64,${data.audioContent}`;
+    const audio = new Audio(audioSrc);
+    return audio;
+  }, []);
 
-        audio.onended = () => {
-          audioRef.current = null;
-          resolve();
-        };
+  // Play a prepared audio element
+  const playPreparedAudio = useCallback(async (audio: HTMLAudioElement): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      audioRef.current = audio;
 
-        audio.onerror = (e) => {
-          audioRef.current = null;
-          reject(new Error("Audio playback failed"));
-        };
+      audio.onended = () => {
+        audioRef.current = null;
+        resolve();
+      };
 
-        await audio.play();
-      } catch (err) {
-        console.error("Cartesia TTS error:", err);
-        reject(err);
-      }
+      audio.onerror = () => {
+        audioRef.current = null;
+        reject(new Error("Audio playback failed"));
+      };
+
+      audio.play().catch(reject);
     });
   }, []);
 
@@ -129,13 +129,15 @@ export function useVoiceConversation(): UseVoiceConversationReturn {
       try {
         const aiResponse = await getAIResponse(userText, messagesRef.current);
 
-        // Add assistant message
+        // Fetch audio FIRST before showing text (eliminates delay)
+        setState("speaking");
+        const audio = await fetchAudio(aiResponse);
+        
+        // Add assistant message and play audio simultaneously
         const assistantMessage: Message = { role: "assistant", content: aiResponse };
         setMessages((prev) => [...prev, assistantMessage]);
-
-        // Speak the response
-        setState("speaking");
-        await playAudio(aiResponse);
+        
+        await playPreparedAudio(audio);
 
         // Resume listening after speaking
         if (isActiveRef.current && recognitionRef.current) {
@@ -160,7 +162,7 @@ export function useVoiceConversation(): UseVoiceConversationReturn {
         }
       }
     },
-    [getAIResponse, playAudio]
+    [getAIResponse, fetchAudio, playPreparedAudio]
   );
 
   // Start continuous listening
@@ -250,12 +252,16 @@ export function useVoiceConversation(): UseVoiceConversationReturn {
       if (fnError) throw fnError;
 
       const greeting = data?.content || "Hi there! How are you feeling today?";
+      
+      // Fetch audio FIRST before showing text (eliminates delay)
+      setState("speaking");
+      const audio = await fetchAudio(greeting);
+      
+      // Show greeting and play audio simultaneously
       const assistantMessage: Message = { role: "assistant", content: greeting };
       setMessages([assistantMessage]);
-
-      // Speak greeting then start continuous listening
-      setState("speaking");
-      await playAudio(greeting);
+      
+      await playPreparedAudio(audio);
 
       // Begin always-listening mode
       startListening();
@@ -265,7 +271,7 @@ export function useVoiceConversation(): UseVoiceConversationReturn {
       setState("idle");
       setIsActive(false);
     }
-  }, [initRecognition, playAudio, startListening]);
+  }, [initRecognition, fetchAudio, playPreparedAudio, startListening]);
 
   // Stop conversation
   const stop = useCallback(() => {
