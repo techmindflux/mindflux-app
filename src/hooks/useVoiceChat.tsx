@@ -30,6 +30,8 @@ export function useVoiceChat(): UseVoiceChatReturn {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
+  const recorderMimeRef = useRef<string>("audio/webm");
+
   // Play TTS audio
   const playAudio = useCallback(async (text: string) => {
     try {
@@ -57,26 +59,27 @@ export function useVoiceChat(): UseVoiceChatReturn {
       
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
-      
+
       audio.onended = () => {
         setIsSpeaking(false);
         URL.revokeObjectURL(audioUrl);
       };
-      
+
       audio.onerror = () => {
         setIsSpeaking(false);
         URL.revokeObjectURL(audioUrl);
       };
-      
+
       await audio.play();
     } catch (err) {
       console.error("Audio playback error:", err);
       setIsSpeaking(false);
+      setError("Audio playback was blocked. Tap the mic once to enable audio.");
     }
   }, []);
 
   // Transcribe audio using STT
-  const transcribe = useCallback(async (audioBase64: string): Promise<string | null> => {
+  const transcribe = useCallback(async (audioBase64: string, mimeType: string): Promise<string | null> => {
     try {
       const response = await fetch(`${SUPABASE_URL}/functions/v1/lumina-stt`, {
         method: "POST",
@@ -85,7 +88,7 @@ export function useVoiceChat(): UseVoiceChatReturn {
           "apikey": SUPABASE_KEY,
           "Authorization": `Bearer ${SUPABASE_KEY}`,
         },
-        body: JSON.stringify({ audio: audioBase64 }),
+        body: JSON.stringify({ audio: audioBase64, mimeType }),
       });
 
       if (!response.ok) throw new Error("STT failed");
@@ -94,6 +97,7 @@ export function useVoiceChat(): UseVoiceChatReturn {
       return data.text || null;
     } catch (err) {
       console.error("Transcription error:", err);
+      setError("Couldn't transcribe your audio. Please try again.");
       return null;
     }
   }, []);
@@ -155,44 +159,45 @@ export function useVoiceChat(): UseVoiceChatReturn {
 
       return new Promise<void>((resolve) => {
         mediaRecorder.onstop = async () => {
-          const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-          mediaRecorder.stream.getTracks().forEach(track => track.stop());
-          
+          const mimeType = recorderMimeRef.current || "audio/webm";
+          const blob = new Blob(chunksRef.current, { type: mimeType });
+          mediaRecorder.stream.getTracks().forEach((track) => track.stop());
+
           // Convert to base64
           const reader = new FileReader();
           reader.onloadend = async () => {
             const base64 = (reader.result as string).split(",")[1];
-            
+
             setIsLoading(true);
-            
+
             // Transcribe
-            const transcript = await transcribe(base64);
-            
+            const transcript = await transcribe(base64, mimeType);
+
             if (transcript) {
               // Add user message
               const userMessage: Message = { role: "user", content: transcript };
               const updatedMessages = [...messages, userMessage];
               setMessages(updatedMessages);
-              
+
               // Get AI response
               try {
                 const response = await sendToPerplexity(updatedMessages);
                 const assistantMessage: Message = { role: "assistant", content: response };
-                setMessages(prev => [...prev, assistantMessage]);
-                
+                setMessages((prev) => [...prev, assistantMessage]);
+
                 // Play response
                 await playAudio(response);
               } catch (err) {
                 setError(err instanceof Error ? err.message : "Failed to get response");
               }
             }
-            
+
             setIsLoading(false);
             resolve();
           };
           reader.readAsDataURL(blob);
         };
-        
+
         mediaRecorder.stop();
         setIsRecording(false);
       });
@@ -201,27 +206,32 @@ export function useVoiceChat(): UseVoiceChatReturn {
       try {
         setError(null);
         chunksRef.current = [];
-        
-        const stream = await navigator.mediaDevices.getUserMedia({ 
+
+        const stream = await navigator.mediaDevices.getUserMedia({
           audio: {
             echoCancellation: true,
             noiseSuppression: true,
             autoGainControl: true,
-          }
+          },
         });
-        
-        const mediaRecorder = new MediaRecorder(stream, {
-          mimeType: "audio/webm;codecs=opus"
-        });
-        
+
+        const preferred = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"]; // mp4 for Safari
+        const supported = preferred.find((t) => (MediaRecorder as any).isTypeSupported?.(t));
+        const mimeType = supported || "";
+        recorderMimeRef.current = mimeType || "audio/webm";
+
+        const mediaRecorder = mimeType
+          ? new MediaRecorder(stream, { mimeType })
+          : new MediaRecorder(stream);
+
         mediaRecorder.ondataavailable = (event) => {
           if (event.data.size > 0) {
             chunksRef.current.push(event.data);
           }
         };
-        
+
         mediaRecorderRef.current = mediaRecorder;
-        mediaRecorder.start(100);
+        mediaRecorder.start(250);
         setIsRecording(true);
       } catch (err) {
         setError("Could not access microphone. Please check permissions.");

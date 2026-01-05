@@ -26,6 +26,29 @@ export default function Home() {
   // Placeholder last stress score (null means no check-in yet)
   const lastStressScore: number | null = null;
 
+  // Best-effort audio unlock to allow TTS autoplay on the next screen
+  const unlockAudio = async () => {
+    try {
+      // Resume AudioContext inside the user gesture.
+      // This increases the chance that subsequent HTMLAudio playback works.
+      const AudioCtx = (window.AudioContext || (window as any).webkitAudioContext) as
+        | typeof AudioContext
+        | undefined;
+      if (!AudioCtx) return;
+
+      const ctx = new AudioCtx();
+      await ctx.resume();
+      await ctx.close();
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleBeginCheckIn = async () => {
+    await unlockAudio();
+    navigate("/check-in");
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background relative overflow-hidden">
       {/* Serene ambient background */}
@@ -94,7 +117,7 @@ export default function Home() {
           {/* Circle container */}
           <div 
             className="relative w-52 h-52 rounded-full glass-card flex items-center justify-center cursor-pointer group transition-all duration-300 hover:scale-[1.02]"
-            onClick={() => navigate("/check-in")}
+            onClick={handleBeginCheckIn}
           >
             {/* Subtle glow effect */}
             <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/20 via-transparent to-accent/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -160,7 +183,7 @@ export default function Home() {
           <Button 
             variant="secondary" 
             className="mt-8 rounded-xl h-12 px-8 font-medium"
-            onClick={() => navigate("/check-in")}
+            onClick={handleBeginCheckIn}
           >
             {lastStressScore !== null ? "Check in again" : "Begin Check-in"}
           </Button>
