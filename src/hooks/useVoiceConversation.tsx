@@ -25,8 +25,8 @@ export function useVoiceConversation(): UseVoiceConversationReturn {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const isProcessingRef = useRef(false);
+  const isSpeakingRef = useRef(false);
 
   // Initialize speech recognition
   const initRecognition = useCallback(() => {
@@ -45,44 +45,38 @@ export function useVoiceConversation(): UseVoiceConversationReturn {
     return recognition;
   }, []);
 
-  // Play TTS audio
+  // Speak via Web Speech (reliable fallback when TTS providers fail)
   const playAudio = useCallback(async (text: string): Promise<void> => {
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       try {
-        const { data, error: fnError } = await supabase.functions.invoke("lumina-tts", {
-          body: { text },
-        });
-
-        if (fnError) throw fnError;
-        if (!data?.audioContent) throw new Error("No audio content received");
-
-        const audioBlob = new Blob(
-          [Uint8Array.from(atob(data.audioContent), (c) => c.charCodeAt(0))],
-          { type: "audio/mpeg" }
-        );
-        const audioUrl = URL.createObjectURL(audioBlob);
-
-        if (audioRef.current) {
-          audioRef.current.pause();
-          URL.revokeObjectURL(audioRef.current.src);
+        if (!("speechSynthesis" in window)) {
+          reject(new Error("Text-to-speech not supported in this browser"));
+          return;
         }
 
-        const audio = new Audio(audioUrl);
-        audioRef.current = audio;
+        // Cancel any previous utterances
+        window.speechSynthesis.cancel();
 
-        audio.onended = () => {
-          URL.revokeObjectURL(audioUrl);
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.rate = 0.95;
+        utter.pitch = 1.0;
+        utter.volume = 1.0;
+
+        utter.onstart = () => {
+          isSpeakingRef.current = true;
+        };
+        utter.onend = () => {
+          isSpeakingRef.current = false;
           resolve();
         };
-
-        audio.onerror = () => {
-          URL.revokeObjectURL(audioUrl);
-          reject(new Error("Audio playback failed"));
+        utter.onerror = (e) => {
+          isSpeakingRef.current = false;
+          reject(new Error((e as any)?.error || "Speech synthesis failed"));
         };
 
-        await audio.play();
+        window.speechSynthesis.speak(utter);
       } catch (err) {
-        console.error("TTS error:", err);
+        isSpeakingRef.current = false;
         reject(err);
       }
     });
@@ -225,10 +219,10 @@ export function useVoiceConversation(): UseVoiceConversationReturn {
       recognitionRef.current = null;
     }
 
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
     }
+    isSpeakingRef.current = false;
 
     setState("idle");
   }, []);
