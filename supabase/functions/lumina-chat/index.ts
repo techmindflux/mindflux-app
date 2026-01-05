@@ -100,23 +100,30 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, questionCount = 0 } = await req.json();
+    const { messages, questionCount = 0, systemPrompt: customSystemPrompt, isChat = false } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Determine if we should wrap up (after 2-3 questions)
-    const shouldWrapUp = questionCount >= 2;
-    
-    let systemPrompt = LUMINA_SYSTEM_PROMPT;
-    if (shouldWrapUp) {
-      systemPrompt += `\n\n## Current Instruction
+    let systemPrompt: string;
+
+    // Use custom system prompt for chat mode, otherwise use check-in mode
+    if (isChat && customSystemPrompt) {
+      systemPrompt = customSystemPrompt;
+    } else {
+      // Check-in mode logic
+      systemPrompt = LUMINA_SYSTEM_PROMPT;
+      const shouldWrapUp = questionCount >= 2;
+      
+      if (shouldWrapUp) {
+        systemPrompt += `\n\n## Current Instruction
 You have asked ${questionCount} questions. It's time to assess the user's stress state based on their responses so far. Provide a brief, gentle assessment of their stress state (Calm, Loaded, Strained, or Overloaded), explain why based on how they spoke, and close the conversation warmly.`;
-    } else if (questionCount === 0) {
-      systemPrompt += `\n\n## Current Instruction
+      } else if (questionCount === 0) {
+        systemPrompt += `\n\n## Current Instruction
 This is the start of the check-in. Greet the user warmly and briefly, then ask your first open-ended question from the question pool. Keep your greeting to 1-2 sentences before the question.`;
+      }
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -131,7 +138,7 @@ This is the start of the check-in. Greet the user warmly and briefly, then ask y
           { role: "system", content: systemPrompt },
           ...messages,
         ],
-        max_tokens: 300,
+        max_tokens: isChat ? 500 : 300,
       }),
     });
 

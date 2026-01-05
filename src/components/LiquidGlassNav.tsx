@@ -1,11 +1,12 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Compass, BarChart3 } from "lucide-react";
+import { Home, Compass, BarChart3, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { path: "/home", icon: Home, label: "Home" },
   { path: "/explore", icon: Compass, label: "Explore" },
   { path: "/reflect", icon: BarChart3, label: "Reflect" },
+  { path: "/lumina", icon: Sparkles, label: "Lumina AI" },
 ];
 
 export function LiquidGlassNav() {

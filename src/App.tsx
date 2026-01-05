@@ -11,6 +11,7 @@ import Home from "./pages/Home";
 import Explore from "./pages/Explore";
 import Reflect from "./pages/Reflect";
 import CheckIn from "./pages/CheckIn";
+import LuminaChat from "./pages/LuminaChat";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
                 <Route path="/home" element={<Home />} />
                 <Route path="/explore" element={<Explore />} />
                 <Route path="/reflect" element={<Reflect />} />
+                <Route path="/lumina" element={<LuminaChat />} />
               </Route>
               <Route path="/check-in" element={<CheckIn />} />
               <Route path="*" element={<NotFound />} />
