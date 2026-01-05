@@ -312,6 +312,10 @@
     animation: breathe 6s ease-in-out infinite;
   }
 
+  .animate-spin-slow {
+    animation: spin 3s linear infinite;
+  }
+
   .delay-100 { animation-delay: 100ms; }
   .delay-200 { animation-delay: 200ms; }
   .delay-300 { animation-delay: 300ms; }

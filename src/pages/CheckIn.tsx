@@ -1,32 +1,104 @@
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useRealtimeVoiceChat } from "@/hooks/useRealtimeVoiceChat";
+import { useVoiceConversation } from "@/hooks/useVoiceConversation";
 import { Button } from "@/components/ui/button";
-import { Mic, X, Loader2, MicOff } from "lucide-react";
+import { Mic, X, MicOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Audio visualization component
-function AudioWaveform({ isActive, isSpeaking }: { isActive: boolean; isSpeaking: boolean }) {
-  const bars = 5;
+// Animated orb component
+function VoiceOrb({ state }: { state: "idle" | "listening" | "thinking" | "speaking" }) {
+  const isActive = state !== "idle";
   
   return (
-    <div className="flex items-center justify-center gap-1 h-8">
-      {Array.from({ length: bars }).map((_, i) => (
+    <div className="relative flex items-center justify-center">
+      {/* Outer glow rings */}
+      <div
+        className={cn(
+          "absolute w-48 h-48 rounded-full transition-all duration-700",
+          state === "speaking" && "bg-primary/20 animate-pulse scale-110",
+          state === "listening" && "bg-accent/20 animate-pulse scale-105",
+          state === "thinking" && "bg-muted/20 scale-100",
+          state === "idle" && "bg-muted/10 scale-95"
+        )}
+      />
+      <div
+        className={cn(
+          "absolute w-36 h-36 rounded-full transition-all duration-500",
+          state === "speaking" && "bg-primary/30 scale-105",
+          state === "listening" && "bg-accent/30 scale-100",
+          state === "thinking" && "bg-muted/30 scale-95",
+          state === "idle" && "bg-muted/20 scale-90"
+        )}
+      />
+
+      {/* Main orb */}
+      <div
+        className={cn(
+          "relative w-28 h-28 rounded-full flex items-center justify-center transition-all duration-300",
+          "bg-gradient-to-br border",
+          state === "speaking" && "from-primary/60 to-primary/40 border-primary/40 shadow-lg shadow-primary/20",
+          state === "listening" && "from-accent/60 to-accent/40 border-accent/40 shadow-lg shadow-accent/20",
+          state === "thinking" && "from-muted/60 to-muted/40 border-muted/40",
+          state === "idle" && "from-muted/40 to-muted/30 border-muted/30"
+        )}
+      >
+        {/* Inner orb */}
         <div
-          key={i}
           className={cn(
-            "w-1 rounded-full transition-all duration-150",
-            isActive || isSpeaking 
-              ? "bg-primary animate-sound-wave" 
-              : "bg-muted-foreground/30 h-2"
+            "w-16 h-16 rounded-full transition-all duration-300",
+            state === "speaking" && "bg-gradient-to-br from-primary to-primary/80 animate-pulse",
+            state === "listening" && "bg-gradient-to-br from-accent to-accent/80 animate-pulse",
+            state === "thinking" && "bg-gradient-to-br from-muted-foreground/50 to-muted-foreground/30 animate-spin-slow",
+            state === "idle" && "bg-gradient-to-br from-muted-foreground/30 to-muted-foreground/20"
           )}
-          style={{
-            animationDelay: `${i * 0.1}s`,
-            height: isActive || isSpeaking ? undefined : "8px",
-          }}
         />
-      ))}
+      </div>
+
+      {/* Sound wave bars for listening state */}
+      {state === "listening" && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="flex gap-1">
+            {[...Array(5)].map((_, i) => (
+              <div
+                key={i}
+                className="w-1 bg-accent rounded-full animate-sound-wave"
+                style={{
+                  animationDelay: `${i * 0.1}s`,
+                  height: "20px",
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// State label
+function StateLabel({ state }: { state: "idle" | "listening" | "thinking" | "speaking" }) {
+  const labels = {
+    idle: "Tap to start",
+    listening: "Listening...",
+    thinking: "Thinking...",
+    speaking: "Lumina",
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <div
+        className={cn(
+          "w-2 h-2 rounded-full transition-colors",
+          state === "speaking" && "bg-primary animate-pulse",
+          state === "listening" && "bg-accent animate-pulse",
+          state === "thinking" && "bg-muted-foreground animate-pulse",
+          state === "idle" && "bg-muted-foreground/50"
+        )}
+      />
+      <span className="text-sm text-muted-foreground font-medium">
+        {labels[state]}
+      </span>
     </div>
   );
 }
@@ -34,16 +106,8 @@ function AudioWaveform({ isActive, isSpeaking }: { isActive: boolean; isSpeaking
 export default function CheckIn() {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
-  const { 
-    messages, 
-    isConnected,
-    isConnecting,
-    isSpeaking,
-    error,
-    connect, 
-    disconnect,
-  } = useRealtimeVoiceChat();
-  
+  const { messages, state, error, start, stop, isActive } = useVoiceConversation();
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -58,32 +122,35 @@ export default function CheckIn() {
   }, [messages]);
 
   const handleEnd = () => {
-    disconnect();
+    stop();
     navigate("/home");
   };
 
-  const handleStart = async () => {
-    await connect();
+  const handleToggle = () => {
+    if (isActive) {
+      stop();
+    } else {
+      start();
+    }
   };
 
   // Get the last assistant message for display
-  const lastAssistantMessage = messages.filter(m => m.role === "assistant").slice(-1)[0];
+  const lastAssistantMessage = messages.filter((m) => m.role === "assistant").slice(-1)[0];
 
   return (
     <div className="min-h-screen flex flex-col bg-background relative overflow-hidden">
-      {/* Dark overlay for voice mode feel */}
-      <div className="fixed inset-0 bg-gradient-to-b from-background via-background to-background/95" />
-      
-      {/* Subtle ambient glow */}
+      {/* Subtle ambient background */}
+      <div className="fixed inset-0 bg-gradient-to-b from-background via-background to-muted/20" />
+
+      {/* Ambient glow */}
       <div className="fixed inset-0 pointer-events-none">
-        <div 
+        <div
           className={cn(
-            "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full blur-[120px] transition-all duration-1000",
-            isSpeaking 
-              ? "bg-primary/20 scale-110" 
-              : isConnected 
-                ? "bg-green-500/15 scale-105"
-                : "bg-primary/10 scale-100"
+            "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full blur-[150px] transition-all duration-1000",
+            state === "speaking" && "bg-primary/15 scale-110",
+            state === "listening" && "bg-accent/15 scale-105",
+            state === "thinking" && "bg-muted/15 scale-100",
+            state === "idle" && "bg-muted/10 scale-95"
           )}
         />
       </div>
@@ -94,142 +161,89 @@ export default function CheckIn() {
           variant="ghost"
           size="icon"
           onClick={handleEnd}
-          className="rounded-full text-muted-foreground hover:text-foreground"
+          className="rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50"
           aria-label="Close"
         >
-          <X className="h-6 w-6" />
+          <X className="h-5 w-5" />
         </Button>
-        
-        <div className="flex items-center gap-2">
-          <div className={cn(
-            "w-2 h-2 rounded-full transition-colors duration-300",
-            isConnected 
-              ? isSpeaking 
-                ? "bg-primary animate-pulse" 
-                : "bg-green-500"
-              : isConnecting
-                ? "bg-amber-500 animate-pulse"
-                : "bg-muted-foreground"
-          )} />
-          <span className="text-sm text-muted-foreground">
-            {isConnected 
-              ? isSpeaking 
-                ? "Lumina is speaking" 
-                : "Listening..."
-              : isConnecting
-                ? "Connecting..."
-                : "Ready to connect"
-            }
-          </span>
-        </div>
-        
-        <div className="w-10" /> {/* Spacer for balance */}
+
+        <StateLabel state={state} />
+
+        <div className="w-10" />
       </header>
 
       {/* Main content */}
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 pb-40">
-        <div className="flex flex-col items-center w-full max-w-md animate-fade-in">
-          {/* Central Lumina orb with wave visualization */}
-          <div className="relative mb-12">
-            {/* Outer glow ring */}
-            <div className={cn(
-                "absolute inset-0 rounded-full transition-all duration-500",
-                isSpeaking 
-                  ? "ring-[3px] ring-primary/40 scale-110" 
-                  : isConnected 
-                    ? "ring-[3px] ring-green-500/40 scale-105"
-                    : "ring-0 scale-100"
-              )} 
-              style={{ width: "160px", height: "160px", margin: "-20px" }}
-            />
-              
-            {/* Main orb */}
-            <div className={cn(
-              "relative w-28 h-28 rounded-full flex items-center justify-center transition-all duration-300",
-              "bg-gradient-to-br from-primary/30 to-accent/30 border border-primary/20"
-            )}>
-              {/* Inner gradient orb */}
-              <div className={cn(
-                "w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent transition-all duration-300",
-                isSpeaking && "animate-pulse scale-110",
-                isConnected && !isSpeaking && "scale-100"
-              )} />
-              
-              {/* Loading indicator overlay */}
-              {isConnecting && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Loader2 className="w-8 h-8 text-foreground/80 animate-spin" />
-                </div>
-              )}
-            </div>
-          </div>
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 pb-48">
+        {/* Voice orb */}
+        <div className="mb-16">
+          <VoiceOrb state={state} />
+        </div>
 
-          {/* Audio waveform visualization */}
-          <div className="mb-8">
-            <AudioWaveform isActive={isConnected && !isSpeaking} isSpeaking={isSpeaking} />
-          </div>
-
-          {/* Message display */}
-          <div className="w-full min-h-[100px] flex items-center justify-center px-4 mb-8">
-            {lastAssistantMessage ? (
-              <p className="text-foreground text-center text-lg leading-relaxed animate-fade-in">
-                {lastAssistantMessage.content}
-              </p>
-            ) : isConnecting ? (
-              <p className="text-muted-foreground text-center">Connecting to Lumina...</p>
-            ) : isConnected ? (
-              <p className="text-muted-foreground text-center">Lumina is listening...</p>
-            ) : (
-              <p className="text-muted-foreground text-center">Tap the mic to start your check-in</p>
-            )}
-          </div>
-
-          {/* Error display */}
-          {error && (
-            <p className="text-destructive text-sm text-center mb-6 px-4">{error}</p>
+        {/* Message display */}
+        <div className="w-full max-w-md min-h-[120px] flex items-start justify-center px-4">
+          {lastAssistantMessage ? (
+            <p className="text-foreground text-center text-lg leading-relaxed font-serif animate-fade-in">
+              "{lastAssistantMessage.content}"
+            </p>
+          ) : state === "thinking" ? (
+            <p className="text-muted-foreground text-center italic">Lumina is preparing...</p>
+          ) : state === "listening" ? (
+            <p className="text-muted-foreground text-center italic">Speak now...</p>
+          ) : (
+            <p className="text-muted-foreground text-center">
+              Start a voice check-in with Lumina
+            </p>
           )}
         </div>
+
+        {/* Error display */}
+        {error && (
+          <p className="text-destructive text-sm text-center mt-4 px-4">{error}</p>
+        )}
       </main>
 
-      {/* Bottom controls - Fixed at bottom */}
-      <div className="fixed bottom-0 left-0 right-0 z-20 flex flex-col items-center pb-12 pt-8 bg-gradient-to-t from-background via-background/95 to-transparent">
+      {/* Bottom controls */}
+      <div className="fixed bottom-0 left-0 right-0 z-20 flex flex-col items-center pb-12 pt-8 bg-gradient-to-t from-background via-background to-transparent">
         {/* Mic button */}
         <button
-          onClick={isConnected ? disconnect : handleStart}
-          disabled={isConnecting}
+          onClick={handleToggle}
+          disabled={state === "thinking" || state === "speaking"}
           className={cn(
             "w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 mb-4",
-            isConnected 
-              ? "bg-destructive text-destructive-foreground" 
-              : "bg-foreground/10 border-2 border-foreground/20 hover:bg-foreground/15 hover:scale-105",
-            isConnecting && "opacity-50 cursor-not-allowed"
+            isActive
+              ? "bg-destructive/90 hover:bg-destructive text-destructive-foreground shadow-lg shadow-destructive/20"
+              : "bg-foreground/10 border-2 border-foreground/20 hover:bg-foreground/15 hover:border-foreground/30 hover:scale-105",
+            (state === "thinking" || state === "speaking") && "opacity-70 cursor-not-allowed"
           )}
-          aria-label={isConnected ? "End session" : "Start session"}
+          aria-label={isActive ? "End session" : "Start session"}
         >
-          {isConnected ? (
-            <MicOff className="w-8 h-8 text-white" />
+          {isActive ? (
+            <MicOff className="w-7 h-7" />
           ) : (
-            <Mic className="w-8 h-8 text-foreground" />
+            <Mic className="w-7 h-7 text-foreground" />
           )}
         </button>
-        
+
         {/* Hint text */}
         <p className="text-sm text-muted-foreground">
-          {isConnecting 
-            ? "Connecting..." 
-            : isConnected 
-              ? "Tap to end session" 
-              : "Tap to start"
-          }
+          {state === "thinking"
+            ? "Processing..."
+            : state === "speaking"
+            ? "Lumina is speaking"
+            : isActive
+            ? "Tap to end"
+            : "Tap to begin"}
         </p>
 
-        {/* End conversation link */}
-        <button 
-          onClick={handleEnd}
-          className="mt-6 text-sm text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4"
-        >
-          End conversation
-        </button>
+        {/* End link */}
+        {isActive && (
+          <button
+            onClick={handleEnd}
+            className="mt-6 text-sm text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4"
+          >
+            End conversation
+          </button>
+        )}
       </div>
     </div>
   );
