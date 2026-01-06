@@ -156,8 +156,8 @@ export default function ManualCheckIn() {
   };
 
   const handleCompleteCheckIn = () => {
-    // Navigate to wellness wall with check-in data
-    navigate("/wellness-wall", {
+    // Navigate to coaching session with check-in data
+    navigate("/coaching-session", {
       state: {
         category: selectedCategory?.id,
         feelings: selectedFeelings,

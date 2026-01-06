@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.wellness-recommendations]
 verify_jwt = false
+
+[functions.coaching-session]
+verify_jwt = false
