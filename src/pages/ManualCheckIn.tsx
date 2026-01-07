@@ -2,7 +2,14 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { X, ArrowLeft, ArrowRight, Plus, PenLine, Camera, Mic } from "lucide-react";
+import { X, ArrowLeft, ArrowRight, Plus, PenLine, Mic } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface StressCategory {
   id: string;
@@ -94,6 +101,10 @@ export default function ManualCheckIn() {
   const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
   const [selectedCompanions, setSelectedCompanions] = useState<string[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
+  const [journalEntry, setJournalEntry] = useState("");
+  const [isTextDialogOpen, setIsTextDialogOpen] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [voiceTranscript, setVoiceTranscript] = useState("");
 
   useEffect(() => {
     if (!isAuthenticated && !isLoading) {
@@ -378,20 +389,61 @@ export default function ManualCheckIn() {
             {/* Add Journal Entry Card */}
             <div className="mb-6 animate-fade-in" style={{ animationDelay: "100ms" }}>
               <div className="bg-muted/60 backdrop-blur-sm rounded-2xl p-4 flex items-center justify-between">
-                <span className="text-foreground/80 text-sm">Add Journal Entry</span>
+                <span className="text-foreground/80 text-sm">
+                  {journalEntry || voiceTranscript ? "Journal entry added ✓" : "Add Journal Entry"}
+                </span>
                 <div className="flex gap-2">
-                  <button className="w-10 h-10 rounded-full bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+                  <button 
+                    onClick={() => setIsTextDialogOpen(true)}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                      journalEntry 
+                        ? "bg-foreground text-background" 
+                        : "bg-muted/80 text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
                     <PenLine className="h-4 w-4" />
                   </button>
-                  <button className="w-10 h-10 rounded-full bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-                    <Camera className="h-4 w-4" />
-                  </button>
-                  <button className="w-10 h-10 rounded-full bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+                  <button 
+                    onClick={() => setIsRecording(!isRecording)}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                      isRecording 
+                        ? "bg-rose-500 text-white animate-pulse" 
+                        : voiceTranscript 
+                          ? "bg-foreground text-background"
+                          : "bg-muted/80 text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
                     <Mic className="h-4 w-4" />
                   </button>
                 </div>
               </div>
+              {isRecording && (
+                <p className="text-center text-muted-foreground text-xs mt-2 animate-pulse">
+                  Recording... Tap mic to stop
+                </p>
+              )}
             </div>
+
+            {/* Text Journal Dialog */}
+            <Dialog open={isTextDialogOpen} onOpenChange={setIsTextDialogOpen}>
+              <DialogContent className="bg-background border-muted">
+                <DialogHeader>
+                  <DialogTitle className="font-display italic">Add Journal Entry</DialogTitle>
+                </DialogHeader>
+                <Textarea
+                  value={journalEntry}
+                  onChange={(e) => setJournalEntry(e.target.value)}
+                  placeholder="Write about how you're feeling..."
+                  className="min-h-[150px] bg-muted/50 border-muted resize-none"
+                />
+                <Button 
+                  onClick={() => setIsTextDialogOpen(false)}
+                  className="w-full bg-foreground text-background hover:bg-foreground/90"
+                >
+                  Save Entry
+                </Button>
+              </DialogContent>
+            </Dialog>
 
             {/* Scrollable Context Options */}
             <div className="flex-1 overflow-y-auto pb-28 space-y-6">
