@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { LogOut, Heart } from "lucide-react";
+import { AppGuideChat } from "@/components/AppGuideChat";
 import { useEffect } from "react";
 
 export default function Home() {
@@ -190,6 +191,10 @@ export default function Home() {
         </div>
       </main>
 
+      {/* App Guide Chat */}
+      <div className="fixed bottom-6 left-6 right-6 z-20">
+        <AppGuideChat />
+      </div>
     </div>
   );
 }
