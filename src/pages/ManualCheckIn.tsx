@@ -2,14 +2,9 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { X, ArrowLeft, ArrowRight, Plus, PenLine, Mic } from "lucide-react";
+import { X, ArrowLeft, ArrowRight, Plus, ChevronDown, ChevronUp } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Slider } from "@/components/ui/slider";
 
 interface StressCategory {
   id: string;
@@ -92,6 +87,13 @@ const contextOptions = {
   locations: ["Home", "Work", "School", "Outside", "Commuting", "Gym"],
 };
 
+const reflectionPrompts = [
+  { id: "trigger", label: "What triggered this?", icon: "⚡" },
+  { id: "body", label: "Where do I feel it in my body?", icon: "🫀" },
+  { id: "need", label: "What do I need right now?", icon: "🌱" },
+  { id: "thought", label: "What thought keeps repeating?", icon: "💭" },
+];
+
 export default function ManualCheckIn() {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading } = useAuth();
@@ -101,10 +103,13 @@ export default function ManualCheckIn() {
   const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
   const [selectedCompanions, setSelectedCompanions] = useState<string[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
-  const [journalEntry, setJournalEntry] = useState("");
-  const [isTextDialogOpen, setIsTextDialogOpen] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [voiceTranscript, setVoiceTranscript] = useState("");
+  
+  // Journal entry states
+  const [feelingIntensity, setFeelingIntensity] = useState(50);
+  const [selectedPrompts, setSelectedPrompts] = useState<string[]>([]);
+  const [promptResponses, setPromptResponses] = useState<Record<string, string>>({});
+  const [isJournalExpanded, setIsJournalExpanded] = useState(false);
+  const [freeformNote, setFreeformNote] = useState("");
 
   useEffect(() => {
     if (!isAuthenticated && !isLoading) {
@@ -141,6 +146,14 @@ export default function ManualCheckIn() {
     );
   };
 
+  const togglePrompt = (promptId: string) => {
+    setSelectedPrompts((prev) =>
+      prev.includes(promptId)
+        ? prev.filter((p) => p !== promptId)
+        : [...prev, promptId]
+    );
+  };
+
   const toggleLocation = (location: string) => {
     setSelectedLocations((prev) =>
       prev.includes(location)
@@ -164,6 +177,28 @@ export default function ManualCheckIn() {
     if (selectedFeelings.length > 0 && selectedCategory) {
       setStep("context");
     }
+  };
+
+  const getIntensityLabel = () => {
+    if (feelingIntensity < 25) return "Mild";
+    if (feelingIntensity < 50) return "Moderate";
+    if (feelingIntensity < 75) return "Strong";
+    return "Intense";
+  };
+
+  const getIntensityColor = () => {
+    if (!selectedCategory) return "#888";
+    const colors: Record<string, string[]> = {
+      overwhelmed: ["#fda4af", "#f43f5e", "#e11d48", "#be123c"],
+      activated: ["#fde68a", "#fbbf24", "#f59e0b", "#d97706"],
+      drained: ["#7dd3fc", "#38bdf8", "#0ea5e9", "#0284c7"],
+      grounded: ["#86efac", "#34d399", "#10b981", "#059669"],
+    };
+    const palette = colors[selectedCategory.id] || colors.overwhelmed;
+    if (feelingIntensity < 25) return palette[0];
+    if (feelingIntensity < 50) return palette[1];
+    if (feelingIntensity < 75) return palette[2];
+    return palette[3];
   };
 
   const handleCompleteCheckIn = () => {
@@ -386,64 +421,144 @@ export default function ManualCheckIn() {
               </p>
             </div>
 
-            {/* Add Journal Entry Card */}
-            <div className="mb-6 animate-fade-in" style={{ animationDelay: "100ms" }}>
-              <div className="bg-muted/60 backdrop-blur-sm rounded-2xl p-4 flex items-center justify-between">
-                <span className="text-foreground/80 text-sm">
-                  {journalEntry || voiceTranscript ? "Journal entry added ✓" : "Add Journal Entry"}
+            {/* Interactive Journal Section */}
+            <div 
+              className="mb-6 animate-fade-in bg-muted/40 backdrop-blur-sm rounded-3xl overflow-hidden"
+              style={{ animationDelay: "100ms" }}
+            >
+              {/* Header - Always visible */}
+              <button
+                onClick={() => setIsJournalExpanded(!isJournalExpanded)}
+                className="w-full p-4 flex items-center justify-between"
+              >
+                <span className="text-foreground/80 text-sm font-medium">
+                  {isJournalExpanded ? "Journal Entry" : "Add Journal Entry"}
                 </span>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => setIsTextDialogOpen(true)}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                      journalEntry 
-                        ? "bg-foreground text-background" 
-                        : "bg-muted/80 text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <PenLine className="h-4 w-4" />
-                  </button>
-                  <button 
-                    onClick={() => setIsRecording(!isRecording)}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                      isRecording 
-                        ? "bg-rose-500 text-white animate-pulse" 
-                        : voiceTranscript 
-                          ? "bg-foreground text-background"
-                          : "bg-muted/80 text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <Mic className="h-4 w-4" />
-                  </button>
+                <div className="flex items-center gap-2">
+                  {(selectedPrompts.length > 0 || freeformNote) && !isJournalExpanded && (
+                    <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
+                      {selectedPrompts.length + (freeformNote ? 1 : 0)} entries
+                    </span>
+                  )}
+                  {isJournalExpanded ? (
+                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </div>
+              </button>
+
+              {/* Expandable Content */}
+              <div className={`overflow-hidden transition-all duration-500 ease-out ${
+                isJournalExpanded ? "max-h-[800px] opacity-100" : "max-h-0 opacity-0"
+              }`}>
+                <div className="px-4 pb-5 space-y-5">
+                  
+                  {/* Intensity Slider */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-foreground/70">Feeling Intensity</span>
+                      <span 
+                        className="text-sm font-medium px-3 py-1 rounded-full"
+                        style={{ 
+                          backgroundColor: `${getIntensityColor()}20`,
+                          color: getIntensityColor()
+                        }}
+                      >
+                        {getIntensityLabel()}
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <div 
+                        className="absolute inset-0 rounded-full opacity-20 h-2 top-1/2 -translate-y-1/2"
+                        style={{
+                          background: selectedCategory 
+                            ? `linear-gradient(to right, ${getIntensityColor()}40, ${getIntensityColor()})`
+                            : undefined
+                        }}
+                      />
+                      <Slider
+                        value={[feelingIntensity]}
+                        onValueChange={(value) => setFeelingIntensity(value[0])}
+                        max={100}
+                        step={1}
+                        className="relative z-10"
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Barely noticeable</span>
+                      <span>Overwhelming</span>
+                    </div>
+                  </div>
+
+                  {/* Reflection Prompts */}
+                  <div className="space-y-3">
+                    <span className="text-sm text-foreground/70">Quick Reflections</span>
+                    <div className="grid grid-cols-2 gap-2">
+                      {reflectionPrompts.map((prompt) => {
+                        const isSelected = selectedPrompts.includes(prompt.id);
+                        return (
+                          <button
+                            key={prompt.id}
+                            onClick={() => togglePrompt(prompt.id)}
+                            className={`
+                              p-3 rounded-2xl text-left transition-all duration-300
+                              ${isSelected 
+                                ? "bg-foreground/10 ring-1 ring-foreground/20" 
+                                : "bg-muted/60 hover:bg-muted"
+                              }
+                            `}
+                          >
+                            <span className="text-lg mb-1 block">{prompt.icon}</span>
+                            <span className="text-xs text-foreground/70 leading-tight">
+                              {prompt.label}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Prompt Response Areas */}
+                  {selectedPrompts.length > 0 && (
+                    <div className="space-y-3 animate-fade-in">
+                      {selectedPrompts.map((promptId) => {
+                        const prompt = reflectionPrompts.find(p => p.id === promptId);
+                        if (!prompt) return null;
+                        return (
+                          <div key={promptId} className="space-y-2">
+                            <label className="text-xs text-foreground/60 flex items-center gap-2">
+                              <span>{prompt.icon}</span>
+                              {prompt.label}
+                            </label>
+                            <Textarea
+                              value={promptResponses[promptId] || ""}
+                              onChange={(e) => setPromptResponses(prev => ({
+                                ...prev,
+                                [promptId]: e.target.value
+                              }))}
+                              placeholder="Tap to reflect..."
+                              className="min-h-[60px] bg-background/50 border-0 resize-none text-sm rounded-xl focus:ring-1 focus:ring-foreground/20"
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Freeform Note */}
+                  <div className="space-y-2">
+                    <span className="text-sm text-foreground/70">Anything else on your mind?</span>
+                    <Textarea
+                      value={freeformNote}
+                      onChange={(e) => setFreeformNote(e.target.value)}
+                      placeholder="Write freely here..."
+                      className="min-h-[80px] bg-background/50 border-0 resize-none text-sm rounded-xl focus:ring-1 focus:ring-foreground/20"
+                    />
+                  </div>
                 </div>
               </div>
-              {isRecording && (
-                <p className="text-center text-muted-foreground text-xs mt-2 animate-pulse">
-                  Recording... Tap mic to stop
-                </p>
-              )}
             </div>
-
-            {/* Text Journal Dialog */}
-            <Dialog open={isTextDialogOpen} onOpenChange={setIsTextDialogOpen}>
-              <DialogContent className="bg-background border-muted">
-                <DialogHeader>
-                  <DialogTitle className="font-display italic">Add Journal Entry</DialogTitle>
-                </DialogHeader>
-                <Textarea
-                  value={journalEntry}
-                  onChange={(e) => setJournalEntry(e.target.value)}
-                  placeholder="Write about how you're feeling..."
-                  className="min-h-[150px] bg-muted/50 border-muted resize-none"
-                />
-                <Button 
-                  onClick={() => setIsTextDialogOpen(false)}
-                  className="w-full bg-foreground text-background hover:bg-foreground/90"
-                >
-                  Save Entry
-                </Button>
-              </DialogContent>
-            </Dialog>
 
             {/* Scrollable Context Options */}
             <div className="flex-1 overflow-y-auto pb-28 space-y-6">
