@@ -12,11 +12,7 @@ interface Message {
   content: string;
 }
 
-const suggestedQuestions = [
-  "What can I do here?",
-  "How do I check in?",
-  "Who is Lumina?",
-];
+const suggestedQuestions = ["What can I do here?", "How do I check in?", "Who is Lumina?"];
 
 export function AppGuideChat() {
   const [open, setOpen] = useState(false);
@@ -54,10 +50,7 @@ export function AppGuideChat() {
       setMessages([...newMessages, assistantMessage]);
     } catch (err) {
       console.error("Guide chat error:", err);
-      setMessages([
-        ...newMessages,
-        { role: "assistant", content: "Hmm, I couldn't connect. Please try again." },
-      ]);
+      setMessages([...newMessages, { role: "assistant", content: "Hmm, I couldn't connect. Please try again." }]);
     } finally {
       setIsLoading(false);
     }
@@ -73,9 +66,7 @@ export function AppGuideChat() {
       <DrawerTrigger asChild>
         <button className="glass-card rounded-full px-4 py-3 flex items-center gap-2 text-left group transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-lg">
           <Sparkles className="w-4 h-4 text-primary" />
-          <span className="text-sm text-muted-foreground whitespace-nowrap">
-            Ask anything...
-          </span>
+          <span className="text-sm text-muted-foreground whitespace-nowrap">Ask anything about MindFlux...</span>
         </button>
       </DrawerTrigger>
 
@@ -92,12 +83,7 @@ export function AppGuideChat() {
                 <p className="text-xs text-muted-foreground">Ask me anything about MindFlux</p>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full"
-              onClick={() => setOpen(false)}
-            >
+            <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setOpen(false)}>
               <X className="w-5 h-5" />
             </Button>
           </div>
@@ -109,9 +95,7 @@ export function AppGuideChat() {
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center mb-4">
                   <Sparkles className="w-8 h-8 text-primary/60" />
                 </div>
-                <h4 className="text-lg font-medium text-foreground mb-2">
-                  How can I help?
-                </h4>
+                <h4 className="text-lg font-medium text-foreground mb-2">How can I help?</h4>
                 <p className="text-sm text-muted-foreground mb-6 max-w-[250px]">
                   I can guide you through MindFlux's features and help you get started
                 </p>
@@ -130,19 +114,13 @@ export function AppGuideChat() {
             ) : (
               <div className="space-y-4">
                 {messages.map((msg, i) => (
-                  <div
-                    key={i}
-                    className={cn(
-                      "flex",
-                      msg.role === "user" ? "justify-end" : "justify-start"
-                    )}
-                  >
+                  <div key={i} className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}>
                     <div
                       className={cn(
                         "max-w-[85%] rounded-2xl px-4 py-3 text-sm",
                         msg.role === "user"
                           ? "bg-primary text-primary-foreground rounded-br-md"
-                          : "bg-secondary/50 text-foreground rounded-bl-md"
+                          : "bg-secondary/50 text-foreground rounded-bl-md",
                       )}
                     >
                       {msg.content}
@@ -161,10 +139,7 @@ export function AppGuideChat() {
           </ScrollArea>
 
           {/* Input */}
-          <form
-            onSubmit={handleSubmit}
-            className="px-6 py-4 border-t border-border/50"
-          >
+          <form onSubmit={handleSubmit} className="px-6 py-4 border-t border-border/50">
             <div className="flex gap-2">
               <Input
                 value={input}
@@ -173,12 +148,7 @@ export function AppGuideChat() {
                 className="flex-1 rounded-xl bg-secondary/30 border-0 focus-visible:ring-1 focus-visible:ring-primary/50"
                 disabled={isLoading}
               />
-              <Button
-                type="submit"
-                size="icon"
-                className="rounded-xl shrink-0"
-                disabled={!input.trim() || isLoading}
-              >
+              <Button type="submit" size="icon" className="rounded-xl shrink-0" disabled={!input.trim() || isLoading}>
                 <Send className="w-4 h-4" />
               </Button>
             </div>
