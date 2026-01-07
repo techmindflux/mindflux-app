@@ -1,5 +1,8 @@
+import { useState } from "react";
 import { MessageCircleHeart, Wind, Brain } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { MindConceptCard, type MindConcept } from "@/components/MindConceptCard";
+import { MindConceptChat } from "@/components/MindConceptChat";
 
 const features = [
   {
@@ -28,8 +31,47 @@ const features = [
   },
 ];
 
+const mindConcepts: MindConcept[] = [
+  {
+    id: "stress-vs-anxiety",
+    title: "Stress vs Anxiety",
+    subtitle: "They feel similar, but they're not the same",
+    icon: "⚡",
+    explanation: "Stress is your body's response to an external pressure—like a deadline or a conflict. It usually fades when the situation resolves. Anxiety, however, often lingers without a clear cause. It's that uneasy feeling that something's wrong, even when things seem fine. Recognizing which you're feeling helps you respond with the right tools.",
+  },
+  {
+    id: "why-thoughts-loop",
+    title: "Why Thoughts Loop",
+    subtitle: "The mind's attempt to solve the unsolvable",
+    icon: "🔄",
+    explanation: "When your brain encounters an unresolved problem—especially an emotional one—it keeps returning to it, trying to find a solution. This rumination feels productive but often isn't. The loop continues because the mind confuses thinking about a problem with solving it. Breaking the cycle often requires stepping out of the thinking mode entirely.",
+  },
+  {
+    id: "body-before-logic",
+    title: "Why the Body Reacts Before Logic",
+    subtitle: "Your nervous system is faster than your thoughts",
+    icon: "💓",
+    explanation: "Your amygdala, the brain's alarm system, processes threats in milliseconds—before your logical brain even gets the information. That's why your heart races or palms sweat before you consciously understand why. This ancient survival mechanism helped our ancestors, but today it can misfire, treating emails like tigers.",
+  },
+  {
+    id: "what-burnout-is",
+    title: "What Burnout Actually Is",
+    subtitle: "More than just being tired",
+    icon: "🔥",
+    explanation: "Burnout isn't exhaustion from working hard—it's the result of prolonged stress without adequate recovery. It shows up as emotional depletion, cynicism, and reduced effectiveness. Unlike tiredness, a weekend off won't fix it. Burnout signals that something fundamental about your relationship with work or life needs to change.",
+  },
+  {
+    id: "emotions-vs-moods",
+    title: "Emotions vs Moods",
+    subtitle: "One is a wave, the other is the tide",
+    icon: "🌊",
+    explanation: "Emotions are short, intense responses to specific events—like feeling angry when someone cuts you off. Moods are longer, subtler states that color everything, often without a clear trigger. You might be in a low mood for days without knowing why. Understanding this helps you respond appropriately to each.",
+  },
+];
+
 export default function Explore() {
   const navigate = useNavigate();
+  const [selectedConcept, setSelectedConcept] = useState<MindConcept | null>(null);
 
   return (
     <main className="min-h-screen bg-background">
@@ -44,7 +86,7 @@ export default function Explore() {
       </header>
 
       {/* Feature Cards */}
-      <section className="px-6 space-y-4 pb-32">
+      <section className="px-6 space-y-4">
         {features.map((feature, index) => (
           <button
             key={feature.id}
@@ -77,6 +119,38 @@ export default function Explore() {
           </button>
         ))}
       </section>
+
+      {/* Understand Your Mind Section */}
+      <section className="px-6 pt-10 pb-32">
+        <div className="mb-5">
+          <h2 className="font-display text-xl font-light text-foreground tracking-tight">
+            Understand Your Mind
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Learn concepts, then explore them in yourself
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          {mindConcepts.map((concept, index) => (
+            <MindConceptCard
+              key={concept.id}
+              concept={concept}
+              index={index}
+              onExplore={setSelectedConcept}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* Concept Chat */}
+      {selectedConcept && (
+        <MindConceptChat
+          concept={selectedConcept}
+          isOpen={!!selectedConcept}
+          onClose={() => setSelectedConcept(null)}
+        />
+      )}
     </main>
   );
 }
