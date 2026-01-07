@@ -192,7 +192,7 @@ export default function Home() {
       </main>
 
       {/* App Guide Chat */}
-      <div className="fixed bottom-24 left-6 right-6 z-20">
+      <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-20 w-auto max-w-xs">
         <AppGuideChat />
       </div>
     </div>

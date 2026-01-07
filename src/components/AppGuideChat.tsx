@@ -71,12 +71,10 @@ export function AppGuideChat() {
   return (
     <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>
-        <button className="w-full glass-card rounded-2xl px-5 py-4 flex items-center gap-3 text-left group transition-all duration-300 hover:scale-[1.01] active:scale-[0.99]">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center group-hover:from-primary/30 group-hover:to-accent/30 transition-colors">
-            <Sparkles className="w-5 h-5 text-primary" />
-          </div>
-          <span className="text-sm text-muted-foreground flex-1">
-            Ask anything about MindFlux...
+        <button className="glass-card rounded-full px-4 py-3 flex items-center gap-2 text-left group transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-lg">
+          <Sparkles className="w-4 h-4 text-primary" />
+          <span className="text-sm text-muted-foreground whitespace-nowrap">
+            Ask anything...
           </span>
         </button>
       </DrawerTrigger>
