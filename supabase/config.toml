@@ -26,3 +26,9 @@ verify_jwt = false
 
 [functions.coaching-session]
 verify_jwt = false
+
+[functions.app-guide]
+verify_jwt = false
+
+[functions.mind-concept-chat]
+verify_jwt = false
