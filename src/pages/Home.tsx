@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut, Sparkles, Send } from "lucide-react";
 import { AppGuideChat } from "@/components/AppGuideChat";
 import { ThoughtTree } from "@/components/ThoughtTree";
+import { BreathingLoader } from "@/components/BreathingLoader";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Textarea } from "@/components/ui/textarea";
@@ -206,9 +207,14 @@ export default function Home() {
               </div>
             </div>
           </div>
+        ) : isAnalyzing ? (
+          /* Breathing Loader State */
+          <div className="pt-4 animate-fade-in">
+            <BreathingLoader />
+          </div>
         ) : (
           /* Tree State */
-          <div className="pt-4">
+          <div className="pt-4 animate-fade-in">
             <ThoughtTree
               originalThought={thought}
               nodes={treeNodes}
