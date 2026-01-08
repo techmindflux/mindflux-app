@@ -441,10 +441,52 @@ export default function ManualCheckIn() {
               </p>
             </div>
 
+            {/* Intensity Slider - Always visible */}
+            <div 
+              className="mb-6 animate-fade-in bg-muted/40 backdrop-blur-sm rounded-3xl p-5"
+              style={{ animationDelay: "100ms" }}
+            >
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-foreground/80">How intense is this feeling?</span>
+                  <span 
+                    className="text-sm font-semibold px-4 py-1.5 rounded-full"
+                    style={{ 
+                      backgroundColor: `${getIntensityColor()}15`,
+                      color: getIntensityColor()
+                    }}
+                  >
+                    {getIntensityLabel()}
+                  </span>
+                </div>
+                <div className="relative pt-1">
+                  <div 
+                    className="absolute inset-0 rounded-full h-2 top-1/2 -translate-y-1/2"
+                    style={{
+                      background: selectedCategory 
+                        ? `linear-gradient(to right, ${getIntensityColor()}30, ${getIntensityColor()})`
+                        : undefined
+                    }}
+                  />
+                  <Slider
+                    value={[feelingIntensity]}
+                    onValueChange={(value) => setFeelingIntensity(value[0])}
+                    max={100}
+                    step={1}
+                    className="relative z-10"
+                  />
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground/70">
+                  <span>Barely noticeable</span>
+                  <span>Overwhelming</span>
+                </div>
+              </div>
+            </div>
+
             {/* Interactive Journal Section */}
             <div 
               className="mb-6 animate-fade-in bg-muted/40 backdrop-blur-sm rounded-3xl overflow-hidden"
-              style={{ animationDelay: "100ms" }}
+              style={{ animationDelay: "150ms" }}
             >
               {/* Header - Always visible */}
               <button
@@ -452,7 +494,7 @@ export default function ManualCheckIn() {
                 className="w-full p-4 flex items-center justify-between"
               >
                 <span className="text-foreground/80 text-sm font-medium">
-                  {isJournalExpanded ? "Journal Entry" : "Add Journal Entry"}
+                  {isJournalExpanded ? "Journal Entry" : "Add Journal Entry (optional)"}
                 </span>
                 <div className="flex items-center gap-2">
                   {(selectedPrompts.length > 0 || freeformNote) && !isJournalExpanded && (
@@ -473,44 +515,6 @@ export default function ManualCheckIn() {
                 isJournalExpanded ? "max-h-[800px] opacity-100" : "max-h-0 opacity-0"
               }`}>
                 <div className="px-4 pb-5 space-y-5">
-                  
-                  {/* Intensity Slider */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-foreground/70">Feeling Intensity</span>
-                      <span 
-                        className="text-sm font-medium px-3 py-1 rounded-full"
-                        style={{ 
-                          backgroundColor: `${getIntensityColor()}20`,
-                          color: getIntensityColor()
-                        }}
-                      >
-                        {getIntensityLabel()}
-                      </span>
-                    </div>
-                    <div className="relative">
-                      <div 
-                        className="absolute inset-0 rounded-full opacity-20 h-2 top-1/2 -translate-y-1/2"
-                        style={{
-                          background: selectedCategory 
-                            ? `linear-gradient(to right, ${getIntensityColor()}40, ${getIntensityColor()})`
-                            : undefined
-                        }}
-                      />
-                      <Slider
-                        value={[feelingIntensity]}
-                        onValueChange={(value) => setFeelingIntensity(value[0])}
-                        max={100}
-                        step={1}
-                        className="relative z-10"
-                      />
-                    </div>
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Barely noticeable</span>
-                      <span>Overwhelming</span>
-                    </div>
-                  </div>
-
                   {/* Reflection Prompts */}
                   <div className="space-y-3">
                     <span className="text-sm text-foreground/70">Quick Reflections</span>
