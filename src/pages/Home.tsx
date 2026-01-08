@@ -2,13 +2,15 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
-import { LogOut, Sparkles, Send } from "lucide-react";
+import { LogOut, Sparkles, Send, Mic } from "lucide-react";
 import { AppGuideChat } from "@/components/AppGuideChat";
 import { ThoughtTree } from "@/components/ThoughtTree";
 import { BreathingLoader } from "@/components/BreathingLoader";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Textarea } from "@/components/ui/textarea";
+import { useVoiceInput } from "@/hooks/useVoiceInput";
+import { cn } from "@/lib/utils";
 
 interface ThoughtNode {
   id: string;
@@ -34,6 +36,14 @@ export default function Home() {
   const [treeNodes, setTreeNodes] = useState<ThoughtNode[]>([]);
   const [rootCause, setRootCause] = useState<string | null>(null);
   const [showTree, setShowTree] = useState(false);
+
+  // Voice input
+  const { isListening, isSupported, toggleListening } = useVoiceInput({
+    onTranscript: (text) => {
+      setThought((prev) => (prev ? `${prev} ${text}` : text));
+    },
+    continuous: true,
+  });
 
   // Get display name from user or default to guest
   const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0];
@@ -169,10 +179,40 @@ export default function Home() {
                 <Textarea
                   value={thought}
                   onChange={(e) => setThought(e.target.value)}
-                  placeholder="Share a thought that's been weighing on you..."
+                  placeholder={isListening ? "Listening... speak your thoughts" : "Share a thought that's been weighing on you..."}
                   className="min-h-[120px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-foreground placeholder:text-muted-foreground/60"
                 />
-                <div className="flex justify-end mt-3">
+                <div className="flex items-center justify-between mt-3">
+                  {/* Mic Button */}
+                  {isSupported && (
+                    <button
+                      onClick={toggleListening}
+                      className={cn(
+                        "relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300",
+                        isListening 
+                          ? "bg-white/90 shadow-lg shadow-white/20" 
+                          : "bg-rose-500/80 hover:bg-rose-500"
+                      )}
+                      aria-label={isListening ? "Stop recording" : "Start recording"}
+                    >
+                      <Mic 
+                        className={cn(
+                          "w-5 h-5 transition-colors",
+                          isListening ? "text-primary" : "text-white"
+                        )} 
+                      />
+                      {/* Recording pulse animation */}
+                      {isListening && (
+                        <>
+                          <span className="absolute inset-0 rounded-full bg-white/50 animate-ping" />
+                          <span className="absolute -inset-1 rounded-full border-2 border-white/30 animate-pulse" />
+                        </>
+                      )}
+                    </button>
+                  )}
+                  
+                  {!isSupported && <div />}
+                  
                   <Button
                     onClick={handleSubmit}
                     disabled={!thought.trim() || isAnalyzing}
