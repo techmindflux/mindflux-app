@@ -289,6 +289,18 @@ export default function CoachingSession() {
               <Button onClick={endSession} size="sm" variant="outline" className="ml-2">
                 Return Home
               </Button>
+              {!isGoogleUser && (
+                <Button 
+                  onClick={async () => {
+                    await logout();
+                    navigate("/", { replace: true });
+                  }} 
+                  size="sm" 
+                  variant="default"
+                >
+                  Log In
+                </Button>
+              )}
             </div>
           ) : (
             <div className="flex items-end gap-2">
