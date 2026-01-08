@@ -212,7 +212,7 @@ export default function ManualCheckIn() {
       setStep("category");
       setSelectedFeelings([]);
     } else {
-      navigate("/check-in");
+      navigate("/home");
     }
   };
 
