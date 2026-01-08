@@ -2,7 +2,8 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { X, ArrowLeft, ArrowRight, Plus, ChevronDown, ChevronUp } from "lucide-react";
+import { X, ArrowLeft, ArrowRight, Plus, ChevronDown, ChevronUp, Check } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
@@ -105,12 +106,53 @@ export default function ManualCheckIn() {
   const [selectedCompanions, setSelectedCompanions] = useState<string[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   
+  // Custom context options
+  const [customActivities, setCustomActivities] = useState<string[]>([]);
+  const [customCompanions, setCustomCompanions] = useState<string[]>([]);
+  const [customLocations, setCustomLocations] = useState<string[]>([]);
+  
+  // Add custom input states
+  const [addingActivity, setAddingActivity] = useState(false);
+  const [addingCompanion, setAddingCompanion] = useState(false);
+  const [addingLocation, setAddingLocation] = useState(false);
+  const [newActivity, setNewActivity] = useState("");
+  const [newCompanion, setNewCompanion] = useState("");
+  const [newLocation, setNewLocation] = useState("");
+  
   // Journal entry states
   const [feelingIntensity, setFeelingIntensity] = useState(50);
   const [selectedPrompts, setSelectedPrompts] = useState<string[]>([]);
   const [promptResponses, setPromptResponses] = useState<Record<string, string>>({});
   const [isJournalExpanded, setIsJournalExpanded] = useState(false);
   const [freeformNote, setFreeformNote] = useState("");
+  
+  // Handlers for adding custom options
+  const handleAddActivity = () => {
+    if (newActivity.trim() && !customActivities.includes(newActivity.trim()) && !contextOptions.activities.includes(newActivity.trim())) {
+      setCustomActivities(prev => [...prev, newActivity.trim()]);
+      setSelectedActivities(prev => [...prev, newActivity.trim()]);
+      setNewActivity("");
+    }
+    setAddingActivity(false);
+  };
+  
+  const handleAddCompanion = () => {
+    if (newCompanion.trim() && !customCompanions.includes(newCompanion.trim()) && !contextOptions.companions.includes(newCompanion.trim())) {
+      setCustomCompanions(prev => [...prev, newCompanion.trim()]);
+      setSelectedCompanions(prev => [...prev, newCompanion.trim()]);
+      setNewCompanion("");
+    }
+    setAddingCompanion(false);
+  };
+  
+  const handleAddLocation = () => {
+    if (newLocation.trim() && !customLocations.includes(newLocation.trim()) && !contextOptions.locations.includes(newLocation.trim())) {
+      setCustomLocations(prev => [...prev, newLocation.trim()]);
+      setSelectedLocations(prev => [...prev, newLocation.trim()]);
+      setNewLocation("");
+    }
+    setAddingLocation(false);
+  };
 
   useEffect(() => {
     if (!isAuthenticated && !isLoading) {
@@ -590,10 +632,38 @@ export default function ManualCheckIn() {
               <div className="animate-fade-in" style={{ animationDelay: "150ms" }}>
                 <h3 className="text-foreground/80 text-lg mb-3">What are you doing?</h3>
                 <div className="flex flex-wrap gap-2">
-                  <button className="w-10 h-10 rounded-full bg-muted/60 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-                    <Plus className="h-4 w-4" />
-                  </button>
-                  {contextOptions.activities.map((activity) => {
+                  {addingActivity ? (
+                    <div className="flex items-center gap-1">
+                      <Input
+                        value={newActivity}
+                        onChange={(e) => setNewActivity(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleAddActivity()}
+                        placeholder="Add activity..."
+                        className="h-10 w-32 rounded-full text-sm px-4 bg-background border-foreground/20"
+                        autoFocus
+                      />
+                      <button 
+                        onClick={handleAddActivity}
+                        className="w-10 h-10 rounded-full bg-foreground text-background flex items-center justify-center hover:bg-foreground/90 transition-colors"
+                      >
+                        <Check className="h-4 w-4" />
+                      </button>
+                      <button 
+                        onClick={() => { setAddingActivity(false); setNewActivity(""); }}
+                        className="w-10 h-10 rounded-full bg-muted/60 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={() => setAddingActivity(true)}
+                      className="w-10 h-10 rounded-full bg-muted/60 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  )}
+                  {[...contextOptions.activities, ...customActivities].map((activity) => {
                     const isSelected = selectedActivities.includes(activity);
                     return (
                       <button
@@ -618,10 +688,38 @@ export default function ManualCheckIn() {
               <div className="animate-fade-in" style={{ animationDelay: "200ms" }}>
                 <h3 className="text-foreground/80 text-lg mb-3">Who are you with?</h3>
                 <div className="flex flex-wrap gap-2">
-                  <button className="w-10 h-10 rounded-full bg-muted/60 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-                    <Plus className="h-4 w-4" />
-                  </button>
-                  {contextOptions.companions.map((companion) => {
+                  {addingCompanion ? (
+                    <div className="flex items-center gap-1">
+                      <Input
+                        value={newCompanion}
+                        onChange={(e) => setNewCompanion(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleAddCompanion()}
+                        placeholder="Add companion..."
+                        className="h-10 w-32 rounded-full text-sm px-4 bg-background border-foreground/20"
+                        autoFocus
+                      />
+                      <button 
+                        onClick={handleAddCompanion}
+                        className="w-10 h-10 rounded-full bg-foreground text-background flex items-center justify-center hover:bg-foreground/90 transition-colors"
+                      >
+                        <Check className="h-4 w-4" />
+                      </button>
+                      <button 
+                        onClick={() => { setAddingCompanion(false); setNewCompanion(""); }}
+                        className="w-10 h-10 rounded-full bg-muted/60 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={() => setAddingCompanion(true)}
+                      className="w-10 h-10 rounded-full bg-muted/60 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  )}
+                  {[...contextOptions.companions, ...customCompanions].map((companion) => {
                     const isSelected = selectedCompanions.includes(companion);
                     return (
                       <button
@@ -646,10 +744,38 @@ export default function ManualCheckIn() {
               <div className="animate-fade-in" style={{ animationDelay: "250ms" }}>
                 <h3 className="text-foreground/80 text-lg mb-3">Where are you?</h3>
                 <div className="flex flex-wrap gap-2">
-                  <button className="w-10 h-10 rounded-full bg-muted/60 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-                    <Plus className="h-4 w-4" />
-                  </button>
-                  {contextOptions.locations.map((location) => {
+                  {addingLocation ? (
+                    <div className="flex items-center gap-1">
+                      <Input
+                        value={newLocation}
+                        onChange={(e) => setNewLocation(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleAddLocation()}
+                        placeholder="Add location..."
+                        className="h-10 w-32 rounded-full text-sm px-4 bg-background border-foreground/20"
+                        autoFocus
+                      />
+                      <button 
+                        onClick={handleAddLocation}
+                        className="w-10 h-10 rounded-full bg-foreground text-background flex items-center justify-center hover:bg-foreground/90 transition-colors"
+                      >
+                        <Check className="h-4 w-4" />
+                      </button>
+                      <button 
+                        onClick={() => { setAddingLocation(false); setNewLocation(""); }}
+                        className="w-10 h-10 rounded-full bg-muted/60 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={() => setAddingLocation(true)}
+                      className="w-10 h-10 rounded-full bg-muted/60 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  )}
+                  {[...contextOptions.locations, ...customLocations].map((location) => {
                     const isSelected = selectedLocations.includes(location);
                     return (
                       <button
