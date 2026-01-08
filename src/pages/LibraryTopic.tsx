@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Send, BookOpen, Video, Headphones, FileText, ExternalLink, Sparkles, Loader2 } from "lucide-react";
+import { ArrowLeft, Send, BookOpen, Video, Headphones, FileText, ExternalLink, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { InsightsLoader } from "@/components/InsightsLoader";
 
 interface Source {
   id: number;
@@ -231,16 +232,7 @@ export default function LibraryTopic() {
       {/* Content Area */}
       <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full px-4 py-6">
         {isInitialLoading ? (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <div className="relative w-16 h-16 mx-auto mb-4">
-                <div className="absolute inset-0 rounded-full border-2 border-primary/20" />
-                <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-                <Sparkles className="absolute inset-0 m-auto h-6 w-6 text-primary animate-pulse" />
-              </div>
-              <p className="text-muted-foreground text-sm">Gathering insights...</p>
-            </div>
-          </div>
+          <InsightsLoader message="Preparing your learning journey" />
         ) : (
           <div className="flex-1 space-y-6 overflow-y-auto pb-24">
             {messages.map((message, index) => (
