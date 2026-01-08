@@ -264,11 +264,18 @@ export default function ManualCheckIn() {
       }
     }
 
-    // Navigate to coaching session with check-in data
+    // Navigate to coaching session with all check-in data
     navigate("/coaching-session", {
       state: {
         category: selectedCategory?.id,
         feelings: selectedFeelings,
+        intensity: feelingIntensity,
+        intensityLabel: getIntensityLabel(),
+        activities: selectedActivities,
+        companions: selectedCompanions,
+        locations: selectedLocations,
+        journalPrompts: promptResponses,
+        freeformNote: freeformNote,
       },
     });
   };

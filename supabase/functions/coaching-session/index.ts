@@ -89,13 +89,49 @@ serve(async (req) => {
     let contextPrompt = COACH_SYSTEM_PROMPT;
     
     if (messageCount === 0 && checkInData) {
-      const { category, feelings } = checkInData;
-      contextPrompt += `\n\n## Current Session Context
-The user just completed a check-in:
+      const { category, feelings, intensity, intensityLabel, activities, companions, locations, journalPrompts, freeformNote } = checkInData;
+      
+      let contextDetails = `\n\n## Current Session Context
+The user just completed a stress check-in. Here is everything they shared:
+
+**Emotional State:**
 - Category: ${category}
 - Feelings: ${feelings.join(", ")}
+- Intensity: ${intensityLabel || 'Moderate'} (${intensity || 50}/100)`;
 
-This is your OPENING message. Follow the Opening Assessment rules strictly.`;
+      if (activities && activities.length > 0) {
+        contextDetails += `\n\n**Context - What they're doing:** ${activities.join(", ")}`;
+      }
+      if (companions && companions.length > 0) {
+        contextDetails += `\n**Context - Who they're with:** ${companions.join(", ")}`;
+      }
+      if (locations && locations.length > 0) {
+        contextDetails += `\n**Context - Where they are:** ${locations.join(", ")}`;
+      }
+      
+      // Add journal reflections if any
+      if (journalPrompts && Object.keys(journalPrompts).length > 0) {
+        contextDetails += `\n\n**Their Journal Reflections:**`;
+        const promptLabels: Record<string, string> = {
+          trigger: "What triggered this",
+          body: "Where they feel it in their body",
+          need: "What they need right now",
+          thought: "What thought keeps repeating",
+        };
+        for (const [key, value] of Object.entries(journalPrompts)) {
+          if (value) {
+            contextDetails += `\n- ${promptLabels[key] || key}: "${value}"`;
+          }
+        }
+      }
+      
+      if (freeformNote) {
+        contextDetails += `\n\n**Additional note from them:** "${freeformNote}"`;
+      }
+
+      contextDetails += `\n\nThis is your OPENING message. Use all this context to provide a deeply personalized, empathetic response. Reference specific details they shared to show you truly understand their situation.`;
+      
+      contextPrompt += contextDetails;
     } else if (messageCount >= 12) {
       contextPrompt += `\n\n## Session Status: NEARING END
 Message count: ${messageCount}/15. Begin steering toward closure and final prescription.`;
