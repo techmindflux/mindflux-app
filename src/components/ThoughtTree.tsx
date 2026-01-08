@@ -56,11 +56,11 @@ export function ThoughtTree({ originalThought, nodes, rootCause }: ThoughtTreePr
   };
 
   return (
-    <div className="relative max-w-2xl mx-auto">
+    <div className="relative max-w-2xl mx-auto pt-6">
       {/* Original Thought - Top of tree */}
-      <div className="relative mb-8 animate-scale-in">
-        <div className="relative glass-card p-5 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-          <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-primary text-primary-foreground text-[10px] font-medium uppercase tracking-wider rounded-full">
+      <div className="relative mb-8 animate-scale-in pt-4">
+        <div className="relative glass-card p-5 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20 overflow-visible">
+          <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-primary text-primary-foreground text-[10px] font-medium uppercase tracking-wider rounded-full z-10">
             Your Thought
           </div>
           <p className="text-center text-foreground font-medium leading-relaxed pt-2">
@@ -150,29 +150,31 @@ export function ThoughtTree({ originalThought, nodes, rootCause }: ThoughtTreePr
 
       {/* Root Cause - Bottom of tree */}
       {showRootCause && rootCause && (
-        <div className="relative mt-10 animate-scale-in">
+        <div className="relative mt-10 pt-4 animate-scale-in">
           {/* Connector */}
-          <div className="absolute left-1/2 -translate-x-1/2 -top-6 w-0.5 h-6 bg-gradient-to-b from-border to-amber-500/40" />
+          <div className="absolute left-1/2 -translate-x-1/2 top-0 w-0.5 h-6 bg-gradient-to-b from-border to-amber-500/40" />
           
           {/* Root indicator */}
-          <div className="flex justify-center mb-3">
+          <div className="flex justify-center mb-6 mt-6">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30 animate-pulse-soft">
               <Lightbulb className="w-5 h-5 text-white" />
             </div>
           </div>
 
           {/* Root cause card */}
-          <div className="glass-card p-6 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-rose-500/10 border-amber-500/30">
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] font-semibold uppercase tracking-wider rounded-full shadow-lg">
+          <div className="relative pt-4">
+            <div className="absolute -top-0 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] font-semibold uppercase tracking-wider rounded-full shadow-lg z-10">
               Root Cause
             </div>
-            <p className="text-center text-foreground font-medium leading-relaxed pt-3 text-lg">
-              {rootCause}
-            </p>
+            <div className="glass-card p-6 pt-8 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-rose-500/10 border-amber-500/30 overflow-visible">
+              <p className="text-center text-foreground font-medium leading-relaxed text-lg">
+                {rootCause}
+              </p>
+            </div>
           </div>
 
           {/* Insight section */}
-          <div className="mt-6 p-4 rounded-xl bg-card/50 border border-border/30">
+          <div className="mt-6 p-4 rounded-xl bg-card/50 border border-border/30 mb-24">
             <p className="text-sm text-muted-foreground leading-relaxed text-center">
               Understanding this root helps you see your thought isn't a truth—it's a pattern. 
               <span className="text-foreground font-medium"> You can observe it without being defined by it.</span>
