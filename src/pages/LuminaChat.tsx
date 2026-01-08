@@ -1,9 +1,11 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Send, Sparkles, Leaf, Wind, ExternalLink, BookOpen, Video, Headphones, FileText, Moon, Heart, Brain, Coffee, Zap, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { LuminaChatSidebar } from "@/components/LuminaChatSidebar";
 
 interface Source {
   id: number;
@@ -106,7 +108,7 @@ const SourcesSection = ({ sources }: { sources: Source[] }) => {
 
 export default function LuminaChat() {
   const navigate = useNavigate();
-  const { authType, logout } = useAuth();
+  const { authType, logout, user } = useAuth();
   const isBlocked = authType !== "google";
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -114,6 +116,11 @@ export default function LuminaChat() {
   const [isSearching, setIsSearching] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Sidebar state
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [isLoadingConversation, setIsLoadingConversation] = useState(false);
 
   const handleLogin = async () => {
     await logout();
@@ -152,13 +159,97 @@ export default function LuminaChat() {
     scrollToBottom();
   }, [messages]);
 
-  useEffect(() => {
+  // Initialize with greeting for new conversations
+  const initializeGreeting = useCallback(() => {
     const greeting: Message = {
       role: "assistant",
       content: "Hello. I'm Lumina, your mental wellness companion. This is a safe space to explore how you're feeling. What's on your mind today?"
     };
     setMessages([greeting]);
+    setCurrentConversationId(null);
   }, []);
+
+  useEffect(() => {
+    initializeGreeting();
+  }, [initializeGreeting]);
+
+  // Load conversation from database
+  const loadConversation = async (conversationId: string) => {
+    setIsLoadingConversation(true);
+    try {
+      const { data: messagesData, error } = await supabase
+        .from("lumina_messages")
+        .select("*")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+
+      const loadedMessages: Message[] = messagesData?.map((m) => ({
+        role: m.role as "user" | "assistant",
+        content: m.content,
+      })) || [];
+
+      setMessages(loadedMessages);
+      setCurrentConversationId(conversationId);
+    } catch (error) {
+      console.error("Failed to load conversation:", error);
+    } finally {
+      setIsLoadingConversation(false);
+    }
+  };
+
+  // Save message to database
+  const saveMessage = async (conversationId: string, role: "user" | "assistant", content: string) => {
+    try {
+      await supabase.from("lumina_messages").insert({
+        conversation_id: conversationId,
+        role,
+        content,
+      });
+    } catch (error) {
+      console.error("Failed to save message:", error);
+    }
+  };
+
+  // Create new conversation
+  const createConversation = async (firstMessage: string): Promise<string | null> => {
+    if (!user?.id) return null;
+    
+    try {
+      // Generate title from first message (first 50 chars)
+      const title = firstMessage.length > 50 
+        ? firstMessage.substring(0, 50) + "..." 
+        : firstMessage;
+
+      const { data, error } = await supabase
+        .from("lumina_conversations")
+        .insert({
+          user_id: user.id,
+          title,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data?.id || null;
+    } catch (error) {
+      console.error("Failed to create conversation:", error);
+      return null;
+    }
+  };
+
+  // Update conversation title
+  const updateConversationTitle = async (conversationId: string, title: string) => {
+    try {
+      await supabase
+        .from("lumina_conversations")
+        .update({ title: title.length > 50 ? title.substring(0, 50) + "..." : title })
+        .eq("id", conversationId);
+    } catch (error) {
+      console.error("Failed to update title:", error);
+    }
+  };
 
   // Function to search for sources using Perplexity
   const searchSources = async (query: string): Promise<Source[]> => {
@@ -195,8 +286,32 @@ export default function LuminaChat() {
     const userMessage: Message = { role: "user", content: input.trim() };
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
+    const userInput = input.trim();
     setInput("");
     setIsLoading(true);
+
+    // Handle conversation persistence for logged-in users
+    let convId = currentConversationId;
+    
+    if (user?.id) {
+      if (!convId) {
+        // Create new conversation on first user message
+        convId = await createConversation(userInput);
+        if (convId) {
+          setCurrentConversationId(convId);
+          // Save the greeting message
+          const greetingMsg = messages.find(m => m.role === "assistant");
+          if (greetingMsg) {
+            await saveMessage(convId, "assistant", greetingMsg.content);
+          }
+        }
+      }
+      
+      // Save user message
+      if (convId) {
+        await saveMessage(convId, "user", userInput);
+      }
+    }
 
     try {
       // Get AI response
@@ -219,7 +334,7 @@ export default function LuminaChat() {
 
       const data = await response.json();
       
-      // Check if the response suggests resources or if we're past the initial exchange
+      // Check if the response suggests resources
       const shouldSearchSources = 
         data.content.toLowerCase().includes("here") ||
         data.content.toLowerCase().includes("might help") ||
@@ -227,13 +342,12 @@ export default function LuminaChat() {
         data.content.toLowerCase().includes("try") ||
         data.content.toLowerCase().includes("suggest") ||
         data.content.toLowerCase().includes("recommend") ||
-        updatedMessages.length >= 4; // After 2 exchanges, start providing sources
+        updatedMessages.length >= 4;
 
       let sources: Source[] = [];
       if (shouldSearchSources) {
-        // Create a search query from the conversation context
         const userMessages = updatedMessages.filter(m => m.role === "user").map(m => m.content);
-        const searchQuery = userMessages.slice(-2).join(" "); // Use last 2 user messages for context
+        const searchQuery = userMessages.slice(-2).join(" ");
         sources = await searchSources(searchQuery);
       }
 
@@ -243,6 +357,16 @@ export default function LuminaChat() {
         sources: sources.length > 0 ? sources : undefined
       };
       setMessages(prev => [...prev, assistantMessage]);
+
+      // Save assistant message
+      if (user?.id && convId) {
+        await saveMessage(convId, "assistant", data.content);
+        // Update conversation timestamp
+        await supabase
+          .from("lumina_conversations")
+          .update({ updated_at: new Date().toISOString() })
+          .eq("id", convId);
+      }
     } catch (error) {
       console.error("Error sending message:", error);
       const errorMessage: Message = {
@@ -259,6 +383,16 @@ export default function LuminaChat() {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
+    }
+  };
+
+  const handleNewConversation = () => {
+    initializeGreeting();
+  };
+
+  const handleSelectConversation = (id: string) => {
+    if (id !== currentConversationId) {
+      loadConversation(id);
     }
   };
 
@@ -302,7 +436,6 @@ export default function LuminaChat() {
   const [cardsVisible, setCardsVisible] = useState(false);
 
   useEffect(() => {
-    // Trigger staggered animation after mount
     const timer = setTimeout(() => setCardsVisible(true), 100);
     return () => clearTimeout(timer);
   }, []);
@@ -313,170 +446,191 @@ export default function LuminaChat() {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col bg-background">
-      {/* Ambient background effects */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="ambient-glow w-[500px] h-[500px] -top-48 -right-48 bg-primary/20 animate-breathe" />
-        <div className="ambient-glow w-[400px] h-[400px] bottom-32 -left-32 bg-accent/30 animate-breathe delay-300" />
-      </div>
+    <div className="relative min-h-screen flex bg-background">
+      {/* Sidebar */}
+      {user?.id && (
+        <LuminaChatSidebar
+          currentConversationId={currentConversationId}
+          onSelectConversation={handleSelectConversation}
+          onNewConversation={handleNewConversation}
+          isOpen={sidebarOpen}
+          onToggle={() => setSidebarOpen(!sidebarOpen)}
+          userId={user.id}
+        />
+      )}
 
-      {/* Header */}
-      <header className="relative z-10 flex items-center gap-4 px-4 py-4 border-b border-border/30">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-full"
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="font-display text-lg font-medium">Lumina</h1>
-            <p className="text-xs text-muted-foreground">Your wellness companion</p>
-          </div>
+      {/* Main chat area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Ambient background effects */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden">
+          <div className="ambient-glow w-[500px] h-[500px] -top-48 -right-48 bg-primary/20 animate-breathe" />
+          <div className="ambient-glow w-[400px] h-[400px] bottom-32 -left-32 bg-accent/30 animate-breathe delay-300" />
         </div>
-      </header>
 
-      {/* Messages area */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
-        {messages.map((message, index) => (
-          <div
-            key={index}
-            className={cn(
-              "flex animate-fade-in",
-              message.role === "user" ? "justify-end" : "justify-start"
-            )}
+        {/* Header */}
+        <header className="relative z-10 flex items-center gap-4 px-4 py-4 border-b border-border/30">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full"
+            onClick={() => navigate(-1)}
           >
-            <div
-              className={cn(
-                "max-w-[85%] rounded-2xl px-4 py-3",
-                message.role === "user"
-                  ? "bg-primary text-primary-foreground rounded-br-md"
-                  : "glass-card rounded-bl-md"
-              )}
-            >
-              <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                {renderMessageContent(message.content)}
-              </p>
-              {message.sources && <SourcesSection sources={message.sources} />}
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="font-display text-lg font-medium">Lumina</h1>
+              <p className="text-xs text-muted-foreground">Your wellness companion</p>
             </div>
           </div>
-        ))}
+        </header>
 
-        {(isLoading || isSearching) && (
-          <div className="flex justify-start animate-fade-in">
-            <div className="glass-card rounded-2xl rounded-bl-md px-4 py-3">
-              <div className="flex items-center gap-2">
-                <div className="flex gap-1">
-                  <span className="w-2 h-2 bg-primary/60 rounded-full animate-pulse" />
-                  <span className="w-2 h-2 bg-primary/60 rounded-full animate-pulse delay-100" />
-                  <span className="w-2 h-2 bg-primary/60 rounded-full animate-pulse delay-200" />
+        {/* Messages area */}
+        <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
+          {isLoadingConversation ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+            </div>
+          ) : (
+            messages.map((message, index) => (
+              <div
+                key={index}
+                className={cn(
+                  "flex animate-fade-in",
+                  message.role === "user" ? "justify-end" : "justify-start"
+                )}
+              >
+                <div
+                  className={cn(
+                    "max-w-[85%] rounded-2xl px-4 py-3",
+                    message.role === "user"
+                      ? "bg-primary text-primary-foreground rounded-br-md"
+                      : "glass-card rounded-bl-md"
+                  )}
+                >
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                    {renderMessageContent(message.content)}
+                  </p>
+                  {message.sources && <SourcesSection sources={message.sources} />}
                 </div>
-                <span className="text-xs text-muted-foreground">
-                  {isSearching ? "Finding resources..." : "Lumina is thinking..."}
-                </span>
+              </div>
+            ))
+          )}
+
+          {(isLoading || isSearching) && (
+            <div className="flex justify-start animate-fade-in">
+              <div className="glass-card rounded-2xl rounded-bl-md px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1">
+                    <span className="w-2 h-2 bg-primary/60 rounded-full animate-pulse" />
+                    <span className="w-2 h-2 bg-primary/60 rounded-full animate-pulse delay-100" />
+                    <span className="w-2 h-2 bg-primary/60 rounded-full animate-pulse delay-200" />
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {isSearching ? "Finding resources..." : "Lumina is thinking..."}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Quick actions and topic cards (show when no messages or after greeting) */}
+        {messages.length <= 1 && !isLoadingConversation && (
+          <div className="px-4 pb-4 space-y-4">
+            {/* Quick action pills */}
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {quickActions.map((action) => (
+                <button
+                  key={action.label}
+                  onClick={() => {
+                    setInput(action.label);
+                    inputRef.current?.focus();
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full glass-button text-sm text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
+                >
+                  <action.icon className="w-4 h-4" />
+                  {action.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Mental health topic cards */}
+            <div className="relative">
+              <p className="text-xs text-muted-foreground mb-3 flex items-center gap-1.5">
+                <Sparkles className="w-3 h-3 text-primary animate-pulse" />
+                Explore topics
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                {topicCards.map((topic, index) => (
+                  <button
+                    key={topic.shortcut}
+                    onClick={() => handleTopicClick(topic)}
+                    className={cn(
+                      "group text-left p-4 rounded-2xl glass-card border border-border/30 hover:border-primary/40 transition-all duration-300 hover:scale-[1.02]",
+                      cardsVisible 
+                        ? "opacity-100 translate-y-0" 
+                        : "opacity-0 translate-y-4"
+                    )}
+                    style={{ 
+                      transitionDelay: `${index * 100}ms`,
+                      transitionProperty: 'opacity, transform, border-color, scale'
+                    }}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                        <topic.icon className="w-4 h-4 text-primary" />
+                      </div>
+                      <span className="text-xs font-medium text-primary">{topic.shortcut}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors line-clamp-2 leading-relaxed">
+                      {topic.title}
+                    </p>
+                  </button>
+                ))}
               </div>
             </div>
           </div>
         )}
 
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Quick actions and topic cards (show when no messages or after greeting) */}
-      {messages.length <= 1 && (
-        <div className="px-4 pb-4 space-y-4">
-          {/* Quick action pills */}
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {quickActions.map((action) => (
-              <button
-                key={action.label}
-                onClick={() => {
-                  setInput(action.label);
-                  inputRef.current?.focus();
+        {/* Input area */}
+        <div className="relative z-10 p-4 border-t border-border/30 bg-background/80 backdrop-blur-sm">
+          <div className="flex items-end gap-2">
+            <div className="flex-1 glass-card rounded-2xl overflow-hidden">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Share what's on your mind..."
+                rows={1}
+                className="w-full px-4 py-3 bg-transparent resize-none focus:outline-none text-sm placeholder:text-muted-foreground"
+                style={{ maxHeight: "120px" }}
+                onInput={(e) => {
+                  const target = e.target as HTMLTextAreaElement;
+                  target.style.height = "auto";
+                  target.style.height = Math.min(target.scrollHeight, 120) + "px";
                 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-full glass-button text-sm text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"
-              >
-                <action.icon className="w-4 h-4" />
-                {action.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Mental health topic cards - neat 2x2 grid with staggered fade-in */}
-          <div className="relative">
-            <p className="text-xs text-muted-foreground mb-3 flex items-center gap-1.5">
-              <Sparkles className="w-3 h-3 text-primary animate-pulse" />
-              Explore topics
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              {topicCards.map((topic, index) => (
-                <button
-                  key={topic.shortcut}
-                  onClick={() => handleTopicClick(topic)}
-                  className={cn(
-                    "group text-left p-4 rounded-2xl glass-card border border-border/30 hover:border-primary/40 transition-all duration-300 hover:scale-[1.02]",
-                    cardsVisible 
-                      ? "opacity-100 translate-y-0" 
-                      : "opacity-0 translate-y-4"
-                  )}
-                  style={{ 
-                    transitionDelay: `${index * 100}ms`,
-                    transitionProperty: 'opacity, transform, border-color, scale'
-                  }}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                      <topic.icon className="w-4 h-4 text-primary" />
-                    </div>
-                    <span className="text-xs font-medium text-primary">{topic.shortcut}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors line-clamp-2 leading-relaxed">
-                    {topic.title}
-                  </p>
-                </button>
-              ))}
+              />
             </div>
+            <Button
+              size="icon"
+              className="rounded-full h-11 w-11 shrink-0"
+              onClick={sendMessage}
+              disabled={!input.trim() || isLoading}
+            >
+              <Send className="w-5 h-5" />
+            </Button>
           </div>
+          <p className="text-[10px] text-muted-foreground text-center mt-2 opacity-60">
+            Lumina is not a therapist. For crisis support, please contact a professional.
+          </p>
         </div>
-      )}
-
-      {/* Input area */}
-      <div className="relative z-10 p-4 border-t border-border/30 bg-background/80 backdrop-blur-sm">
-        <div className="flex items-end gap-2">
-          <div className="flex-1 glass-card rounded-2xl overflow-hidden">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Share what's on your mind..."
-              rows={1}
-              className="w-full px-4 py-3 bg-transparent resize-none focus:outline-none text-sm placeholder:text-muted-foreground"
-              style={{ maxHeight: "120px" }}
-              onInput={(e) => {
-                const target = e.target as HTMLTextAreaElement;
-                target.style.height = "auto";
-                target.style.height = Math.min(target.scrollHeight, 120) + "px";
-              }}
-            />
-          </div>
-          <Button
-            size="icon"
-            className="rounded-full h-11 w-11 shrink-0"
-            onClick={sendMessage}
-            disabled={!input.trim() || isLoading}
-          >
-            <Send className="w-5 h-5" />
-          </Button>
-        </div>
-        <p className="text-[10px] text-muted-foreground text-center mt-2 opacity-60">
-          Lumina is not a therapist. For crisis support, please contact a professional.
-        </p>
       </div>
     </div>
   );
