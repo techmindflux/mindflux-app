@@ -10,8 +10,6 @@ import Auth from "./pages/Auth";
 import Home from "./pages/Home";
 import Explore from "./pages/Explore";
 import Reflect from "./pages/Reflect";
-import CheckInOptions from "./pages/CheckInOptions";
-import VoiceCheckIn from "./pages/VoiceCheckIn";
 import ManualCheckIn from "./pages/ManualCheckIn";
 import CoachingSession from "./pages/CoachingSession";
 import LuminaChat from "./pages/LuminaChat";
@@ -37,8 +35,6 @@ const App = () => (
                 <Route path="/lumina" element={<LuminaChat />} />
                 <Route path="/library/:topicId" element={<LibraryTopic />} />
               </Route>
-              <Route path="/check-in" element={<CheckInOptions />} />
-              <Route path="/check-in/voice" element={<VoiceCheckIn />} />
               <Route path="/check-in/manual" element={<ManualCheckIn />} />
               <Route path="/coaching-session" element={<CoachingSession />} />
               <Route path="*" element={<NotFound />} />
