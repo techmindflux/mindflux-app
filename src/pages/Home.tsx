@@ -2,30 +2,40 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
-import { LogOut, Heart } from "lucide-react";
+import { LogOut, Sparkles, Send } from "lucide-react";
 import { AppGuideChat } from "@/components/AppGuideChat";
+import { ThoughtTree } from "@/components/ThoughtTree";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Textarea } from "@/components/ui/textarea";
 
-interface LastCheckIn {
-  category: string;
-  intensity: number;
-  feelings: string[];
-  created_at: string;
+interface ThoughtNode {
+  id: string;
+  text: string;
+  level: number;
+  isRoot?: boolean;
 }
 
-const categoryColors: Record<string, { ring: string; bg: string; text: string }> = {
-  overwhelmed: { ring: "stroke-rose-500", bg: "from-rose-500/20 to-red-500/20", text: "text-rose-500" },
-  activated: { ring: "stroke-amber-400", bg: "from-amber-400/20 to-orange-400/20", text: "text-amber-500" },
-  drained: { ring: "stroke-sky-400", bg: "from-sky-400/20 to-blue-500/20", text: "text-sky-500" },
-  grounded: { ring: "stroke-emerald-400", bg: "from-emerald-400/20 to-green-500/20", text: "text-emerald-500" },
-};
+const thoughtSuggestions = [
+  "I'm not good enough for this",
+  "Everyone is judging me",
+  "I'll never be successful",
+  "Something bad is going to happen",
+];
 
 export default function Home() {
   const navigate = useNavigate();
   const { isAuthenticated, authType, logout, user, isLoading } = useAuth();
-  const [lastCheckIn, setLastCheckIn] = useState<LastCheckIn | null>(null);
-  const [loadingCheckIn, setLoadingCheckIn] = useState(true);
+  
+  // Thought Unpacker state
+  const [thought, setThought] = useState("");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [treeNodes, setTreeNodes] = useState<ThoughtNode[]>([]);
+  const [rootCause, setRootCause] = useState<string | null>(null);
+  const [showTree, setShowTree] = useState(false);
+
+  // Get display name from user or default to guest
+  const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0];
 
   useEffect(() => {
     if (!isAuthenticated && !isLoading) {
@@ -33,84 +43,46 @@ export default function Home() {
     }
   }, [isAuthenticated, isLoading, navigate]);
 
-  // Fetch last check-in for Google users
-  useEffect(() => {
-    const fetchLastCheckIn = async () => {
-      if (authType !== "google" || !user?.id) {
-        setLoadingCheckIn(false);
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase
-          .from("stress_checkins")
-          .select("category, intensity, feelings, created_at")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (!error && data) {
-          setLastCheckIn(data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch last check-in:", error);
-      } finally {
-        setLoadingCheckIn(false);
-      }
-    };
-
-    if (!isLoading) {
-      fetchLastCheckIn();
-    }
-  }, [authType, user?.id, isLoading]);
-
   const handleLogout = async () => {
     await logout();
     navigate("/");
   };
-  
-  // Get display name from user or default to guest
-  const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0];
 
-  // Best-effort audio unlock to allow TTS autoplay on the next screen
-  const unlockAudio = async () => {
+  const handleSubmit = async () => {
+    if (!thought.trim() || isAnalyzing) return;
+    
+    setIsAnalyzing(true);
+    setShowTree(true);
+    
     try {
-      // Resume AudioContext inside the user gesture.
-      // This increases the chance that subsequent HTMLAudio playback works.
-      const AudioCtx = (window.AudioContext || (window as any).webkitAudioContext) as
-        | typeof AudioContext
-        | undefined;
-      if (!AudioCtx) return;
+      const { data, error } = await supabase.functions.invoke("thought-unpacker", {
+        body: { thought: thought.trim() },
+      });
 
-      const ctx = new AudioCtx();
-      await ctx.resume();
-      await ctx.close();
-    } catch {
-      // ignore
+      if (error) throw error;
+
+      if (data?.nodes && data?.rootCause) {
+        setTreeNodes(data.nodes);
+        setRootCause(data.rootCause);
+      }
+    } catch (error) {
+      console.error("Error analyzing thought:", error);
+      setShowTree(false);
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
-  const handleBeginCheckIn = async () => {
-    await unlockAudio();
-    navigate("/check-in");
+  const handleReset = () => {
+    setThought("");
+    setTreeNodes([]);
+    setRootCause(null);
+    setShowTree(false);
   };
 
-  const getTimeAgo = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
-    if (diffHours < 1) return "Just now";
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays === 1) return "Yesterday";
-    if (diffDays < 7) return `${diffDays} days ago`;
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const handleSuggestionClick = (suggestion: string) => {
+    setThought(suggestion);
   };
-
-  const colors = lastCheckIn ? categoryColors[lastCheckIn.category] || categoryColors.grounded : null;
 
   return (
     <div className="min-h-screen flex flex-col bg-background relative overflow-hidden">
@@ -173,108 +145,79 @@ export default function Home() {
       </header>
 
       {/* Main content */}
-      <main className="relative z-10 flex-1 px-6 flex flex-col items-center justify-center pb-24">
-        
-        {/* Stress Check-in Circle */}
-        <div className="flex flex-col items-center text-center animate-slide-up">
-          {/* Circle container */}
-          <div 
-            className="relative w-52 h-52 rounded-full glass-card flex items-center justify-center cursor-pointer group transition-all duration-300 hover:scale-[1.02]"
-            onClick={handleBeginCheckIn}
-          >
-            {/* Category-based glow effect */}
-            <div className={`absolute inset-0 rounded-full bg-gradient-to-br ${lastCheckIn && colors ? colors.bg : "from-primary/20 via-transparent to-accent/20"} opacity-60 group-hover:opacity-80 transition-opacity duration-500`} />
-            
-            {/* Inner content */}
-            <div className="relative z-10 flex flex-col items-center">
-              {lastCheckIn && !loadingCheckIn ? (
-                <>
-                  <span className={`text-5xl font-display font-light ${colors?.text || "text-foreground"}`}>
-                    {lastCheckIn.intensity}
-                  </span>
-                  <span className="text-sm text-muted-foreground mt-1 capitalize">
-                    {lastCheckIn.category}
-                  </span>
-                </>
-              ) : loadingCheckIn && authType === "google" ? (
-                <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-              ) : (
-                <>
-                  <Heart className="w-10 h-10 text-primary/70 mb-2" />
-                  <span className="text-sm text-muted-foreground">Tap to begin</span>
-                </>
-              )}
+      <main className="relative z-10 flex-1 px-6 pb-32 overflow-y-auto">
+        {!showTree ? (
+          /* Input State */
+          <div className="flex flex-col items-center text-center pt-8 animate-fade-in">
+            {/* Icon */}
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center mb-6">
+              <Sparkles className="w-8 h-8 text-primary" />
             </div>
 
-            {/* Progress ring (only show if there's a check-in) */}
-            {lastCheckIn && !loadingCheckIn && (
-              <svg 
-                className="absolute inset-0 w-full h-full -rotate-90" 
-                viewBox="0 0 100 100"
-              >
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="46"
-                  fill="none"
-                  stroke="hsl(var(--muted))"
-                  strokeWidth="2.5"
-                  className="opacity-40"
+            {/* Title */}
+            <h2 className="text-2xl font-display font-medium text-foreground mb-2">
+              What's on your mind?
+            </h2>
+            <p className="text-muted-foreground text-sm mb-8 max-w-[280px]">
+              Let's discover the roots of your thoughts and find clarity together.
+            </p>
+
+            {/* Thought Input */}
+            <div className="w-full max-w-md">
+              <div className="glass-card p-4 relative">
+                <Textarea
+                  value={thought}
+                  onChange={(e) => setThought(e.target.value)}
+                  placeholder="Share a thought that's been weighing on you..."
+                  className="min-h-[120px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-foreground placeholder:text-muted-foreground/60"
                 />
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="46"
-                  fill="none"
-                  className={colors?.ring || "stroke-primary"}
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeDasharray={`${lastCheckIn.intensity * 2.89} 289`}
-                  style={{ transition: "stroke-dasharray 1s ease-out" }}
-                />
-              </svg>
-            )}
+                <div className="flex justify-end mt-3">
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={!thought.trim() || isAnalyzing}
+                    className="rounded-xl gap-2"
+                  >
+                    {isAnalyzing ? (
+                      <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                    Discover Roots
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Suggestions */}
+            <div className="mt-8 w-full max-w-md">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-4">
+                Common thought patterns
+              </p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {thoughtSuggestions.map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    className="text-sm px-4 py-2 rounded-full bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-all duration-200"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-
-          {/* Label */}
-          <h2 className="text-xl font-display font-medium text-foreground mt-8">
-            Stress Check-in
-          </h2>
-          <p className="text-sm text-muted-foreground mt-2 max-w-[220px]">
-            {lastCheckIn 
-              ? `Last check-in: ${getTimeAgo(lastCheckIn.created_at)}`
-              : "Take a moment to understand your stress levels"
-            }
-          </p>
-
-          {/* Feelings pills - show last feelings */}
-          {lastCheckIn && lastCheckIn.feelings.length > 0 && (
-            <div className="flex flex-wrap justify-center gap-2 mt-4 max-w-[280px]">
-              {lastCheckIn.feelings.slice(0, 3).map((feeling) => (
-                <span 
-                  key={feeling}
-                  className={`text-xs px-3 py-1 rounded-full bg-muted/60 ${colors?.text || "text-foreground"}`}
-                >
-                  {feeling}
-                </span>
-              ))}
-              {lastCheckIn.feelings.length > 3 && (
-                <span className="text-xs px-3 py-1 rounded-full bg-muted/40 text-muted-foreground">
-                  +{lastCheckIn.feelings.length - 3}
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* CTA Button */}
-          <Button 
-            variant="secondary" 
-            className="mt-8 rounded-xl h-12 px-8 font-medium"
-            onClick={handleBeginCheckIn}
-          >
-            {lastCheckIn ? "Check in again" : "Begin Check-in"}
-          </Button>
-        </div>
+        ) : (
+          /* Tree State */
+          <div className="pt-4">
+            <ThoughtTree
+              originalThought={thought}
+              nodes={treeNodes}
+              rootCause={rootCause}
+              isLoading={isAnalyzing}
+              onReset={handleReset}
+            />
+          </div>
+        )}
       </main>
 
       {/* App Guide Chat */}
