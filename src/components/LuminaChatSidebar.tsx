@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { MessageSquare, Plus, Trash2, PanelLeftClose, PanelLeft } from "lucide-react";
+import { MessageSquare, Plus, Trash2, PanelLeftClose, PanelLeft, BookOpen, History, Brain, Heart, Moon, Leaf, Sparkles, Wind } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { formatDistanceToNow } from "date-fns";
 
 interface Conversation {
   id: string;
@@ -16,21 +15,77 @@ interface LuminaChatSidebarProps {
   currentConversationId: string | null;
   onSelectConversation: (id: string) => void;
   onNewConversation: () => void;
+  onSelectTopic?: (topic: string) => void;
   isOpen: boolean;
   onToggle: () => void;
   userId: string;
 }
 
+type SidebarTab = 'library' | 'history';
+
+const libraryTopics = [
+  {
+    id: "stress-management",
+    title: "Stress Management",
+    subtitle: "Techniques to find calm",
+    icon: Wind,
+    gradient: "from-blue-600/80 via-teal-500/70 to-cyan-400/60",
+    bgImage: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop&auto=format"
+  },
+  {
+    id: "anxiety-relief",
+    title: "Anxiety Relief",
+    subtitle: "Quiet your racing mind",
+    icon: Sparkles,
+    gradient: "from-purple-600/80 via-violet-500/70 to-indigo-400/60",
+    bgImage: "https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?w=400&h=300&fit=crop&auto=format"
+  },
+  {
+    id: "better-sleep",
+    title: "Better Sleep",
+    subtitle: "Rest deeply tonight",
+    icon: Moon,
+    gradient: "from-indigo-700/80 via-blue-600/70 to-slate-500/60",
+    bgImage: "https://images.unsplash.com/photo-1507400492013-162706c8c05e?w=400&h=300&fit=crop&auto=format"
+  },
+  {
+    id: "mindfulness",
+    title: "Mindfulness",
+    subtitle: "Be present in the moment",
+    icon: Leaf,
+    gradient: "from-emerald-600/80 via-green-500/70 to-teal-400/60",
+    bgImage: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop&auto=format"
+  },
+  {
+    id: "emotional-wellness",
+    title: "Emotional Wellness",
+    subtitle: "Understand your feelings",
+    icon: Heart,
+    gradient: "from-rose-600/80 via-pink-500/70 to-orange-400/60",
+    bgImage: "https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=400&h=300&fit=crop&auto=format"
+  },
+  {
+    id: "mental-resilience",
+    title: "Mental Resilience",
+    subtitle: "Build inner strength",
+    icon: Brain,
+    gradient: "from-amber-600/80 via-orange-500/70 to-yellow-400/60",
+    bgImage: "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&h=300&fit=crop&auto=format"
+  },
+];
+
 export function LuminaChatSidebar({
   currentConversationId,
   onSelectConversation,
   onNewConversation,
+  onSelectTopic,
   isOpen,
   onToggle,
   userId,
 }: LuminaChatSidebarProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<SidebarTab>('library');
 
   useEffect(() => {
     if (userId) {
@@ -73,6 +128,10 @@ export function LuminaChatSidebar({
     }
   };
 
+  const handleTopicClick = (topic: typeof libraryTopics[0]) => {
+    onSelectTopic?.(`Tell me about ${topic.title.toLowerCase()} techniques and strategies.`);
+  };
+
   // Group conversations by date
   const groupedConversations = conversations.reduce((groups, conv) => {
     const date = new Date(conv.updated_at);
@@ -105,7 +164,7 @@ export function LuminaChatSidebar({
   }
 
   return (
-    <aside className="w-64 h-full bg-background/95 backdrop-blur-md border-r border-border/50 flex flex-col">
+    <aside className="w-72 h-full bg-background/95 backdrop-blur-md border-r border-border/50 flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-border/50 flex items-center justify-between">
         <Button
@@ -126,9 +185,77 @@ export function LuminaChatSidebar({
         </Button>
       </div>
 
-      {/* Conversation List */}
-      <div className="flex-1 overflow-y-auto p-2">
-        {isLoading ? (
+      {/* Tab Navigation */}
+      <div className="px-3 py-2 border-b border-border/30">
+        <div className="flex gap-1 p-0.5 bg-muted/30 rounded-lg">
+          <button
+            onClick={() => setActiveTab('library')}
+            className={cn(
+              "flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-md text-xs font-medium transition-all duration-200",
+              activeTab === 'library'
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <BookOpen className="h-3.5 w-3.5" />
+            Library
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={cn(
+              "flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-md text-xs font-medium transition-all duration-200",
+              activeTab === 'history'
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <History className="h-3.5 w-3.5" />
+            History
+          </button>
+        </div>
+      </div>
+
+      {/* Content Area */}
+      <div className="flex-1 overflow-y-auto p-3">
+        {activeTab === 'library' ? (
+          <div className="space-y-3">
+            <p className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider px-1">
+              Topics to Explore
+            </p>
+            <div className="grid gap-2.5">
+              {libraryTopics.map((topic) => (
+                <button
+                  key={topic.id}
+                  onClick={() => handleTopicClick(topic)}
+                  className="group relative overflow-hidden rounded-xl aspect-[2.2/1] text-left transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
+                >
+                  {/* Background Image */}
+                  <div 
+                    className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
+                    style={{ backgroundImage: `url(${topic.bgImage})` }}
+                  />
+                  {/* Gradient Overlay */}
+                  <div className={cn(
+                    "absolute inset-0 bg-gradient-to-br opacity-90 transition-opacity duration-300 group-hover:opacity-80",
+                    topic.gradient
+                  )} />
+                  {/* Content */}
+                  <div className="relative h-full flex flex-col justify-end p-3">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <topic.icon className="h-4 w-4 text-white/90" />
+                      <h3 className="text-sm font-semibold text-white tracking-tight">
+                        {topic.title}
+                      </h3>
+                    </div>
+                    <p className="text-[11px] text-white/80 font-light">
+                      {topic.subtitle}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : isLoading ? (
           <div className="flex items-center justify-center py-8">
             <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
           </div>

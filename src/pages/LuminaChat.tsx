@@ -445,6 +445,11 @@ export default function LuminaChat() {
     inputRef.current?.focus();
   };
 
+  const handleSidebarTopicSelect = (topicPrompt: string) => {
+    setInput(topicPrompt);
+    inputRef.current?.focus();
+  };
+
   return (
     <div className="relative min-h-screen flex bg-background">
       {/* Sidebar */}
@@ -453,6 +458,7 @@ export default function LuminaChat() {
           currentConversationId={currentConversationId}
           onSelectConversation={handleSelectConversation}
           onNewConversation={handleNewConversation}
+          onSelectTopic={handleSidebarTopicSelect}
           isOpen={sidebarOpen}
           onToggle={() => setSidebarOpen(!sidebarOpen)}
           userId={user.id}
