@@ -14,6 +14,13 @@ interface Message {
 interface CheckInData {
   category: string;
   feelings: string[];
+  intensity: number;
+  intensityLabel: string;
+  activities: string[];
+  companions: string[];
+  locations: string[];
+  journalPrompts: Record<string, string>;
+  freeformNote: string;
 }
 
 const MAX_MESSAGES_GUEST = 5;
@@ -235,11 +242,21 @@ export default function CoachingSession() {
       <main className="flex-1 pt-28 pb-24 px-4 overflow-y-auto">
         <div className="max-w-lg mx-auto space-y-4">
           {/* Session Context */}
-          <div className="flex justify-center mb-6">
-            <div className="bg-muted/50 rounded-full px-4 py-1.5 text-xs text-muted-foreground">
-              Feeling: {checkInData.feelings.slice(0, 3).join(", ")}
-              {checkInData.feelings.length > 3 && ` +${checkInData.feelings.length - 3}`}
+          <div className="flex flex-wrap justify-center gap-2 mb-6">
+            <div className="bg-muted/50 rounded-full px-3 py-1.5 text-xs text-muted-foreground">
+              {checkInData.feelings.slice(0, 2).join(", ")}
+              {checkInData.feelings.length > 2 && ` +${checkInData.feelings.length - 2}`}
             </div>
+            {checkInData.intensityLabel && (
+              <div className="bg-muted/50 rounded-full px-3 py-1.5 text-xs text-muted-foreground">
+                {checkInData.intensityLabel} intensity
+              </div>
+            )}
+            {checkInData.activities.length > 0 && (
+              <div className="bg-muted/50 rounded-full px-3 py-1.5 text-xs text-muted-foreground">
+                {checkInData.activities[0]}
+              </div>
+            )}
           </div>
 
           {messages.map((message) => (
