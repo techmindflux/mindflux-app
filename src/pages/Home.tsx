@@ -29,7 +29,7 @@ const thoughtSuggestions = [
 export default function Home() {
   const navigate = useNavigate();
   const { isAuthenticated, authType, logout, user, isLoading } = useAuth();
-  
+
   // Thought Unpacker state
   const [thought, setThought] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -61,10 +61,10 @@ export default function Home() {
 
   const handleSubmit = async () => {
     if (!thought.trim() || isAnalyzing) return;
-    
+
     setIsAnalyzing(true);
     setShowTree(true);
-    
+
     try {
       const { data, error } = await supabase.functions.invoke("thought-unpacker", {
         body: { thought: thought.trim() },
@@ -99,34 +99,34 @@ export default function Home() {
     <div className="min-h-screen flex flex-col bg-background relative overflow-hidden">
       {/* Serene ambient background */}
       <div className="fixed inset-0 pointer-events-none">
-        <div 
-          className="ambient-glow animate-breathe" 
+        <div
+          className="ambient-glow animate-breathe"
           style={{
-            top: '-10%',
-            right: '-20%',
-            width: '60%',
-            height: '50%',
-            background: 'hsl(210 50% 80%)',
+            top: "-10%",
+            right: "-20%",
+            width: "60%",
+            height: "50%",
+            background: "hsl(210 50% 80%)",
           }}
         />
-        <div 
-          className="ambient-glow animate-breathe delay-300" 
+        <div
+          className="ambient-glow animate-breathe delay-300"
           style={{
-            bottom: '10%',
-            left: '-15%',
-            width: '50%',
-            height: '40%',
-            background: 'hsl(35 50% 85%)',
+            bottom: "10%",
+            left: "-15%",
+            width: "50%",
+            height: "40%",
+            background: "hsl(35 50% 85%)",
           }}
         />
-        <div 
-          className="ambient-glow animate-breathe delay-500" 
+        <div
+          className="ambient-glow animate-breathe delay-500"
           style={{
-            top: '40%',
-            right: '-10%',
-            width: '35%',
-            height: '30%',
-            background: 'hsl(150 35% 80%)',
+            top: "40%",
+            right: "-10%",
+            width: "35%",
+            height: "30%",
+            background: "hsl(150 35% 80%)",
           }}
         />
       </div>
@@ -137,19 +137,11 @@ export default function Home() {
           <p className="text-sm font-medium text-muted-foreground tracking-wide uppercase">
             {authType === "google" ? `Welcome, ${displayName || "back"}` : "Hello, Guest"}
           </p>
-          <h1 className="text-3xl font-display font-light text-foreground mt-1">
-            Your Sanctuary
-          </h1>
+          <h1 className="text-3xl font-display font-light text-foreground mt-1">Your Sanctuary</h1>
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Button
-            variant="glass"
-            size="icon"
-            onClick={handleLogout}
-            className="rounded-full"
-            aria-label="Sign out"
-          >
+          <Button variant="glass" size="icon" onClick={handleLogout} className="rounded-full" aria-label="Sign out">
             <LogOut className="h-5 w-5 text-foreground" />
           </Button>
         </div>
@@ -166,9 +158,7 @@ export default function Home() {
             </div>
 
             {/* Title */}
-            <h2 className="text-2xl font-display font-medium text-foreground mb-2">
-              What's on your mind?
-            </h2>
+            <h2 className="text-2xl font-display font-medium text-foreground mb-2">What's your MindFlux?</h2>
             <p className="text-muted-foreground text-sm mb-8 max-w-[280px]">
               Let's discover the roots of your thoughts and find clarity together.
             </p>
@@ -179,7 +169,9 @@ export default function Home() {
                 <Textarea
                   value={thought}
                   onChange={(e) => setThought(e.target.value)}
-                  placeholder={isListening ? "Listening... speak your thoughts" : "Share a thought that's been weighing on you..."}
+                  placeholder={
+                    isListening ? "Listening... speak your thoughts" : "Share a thought that's been weighing on you..."
+                  }
                   className="min-h-[120px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-foreground placeholder:text-muted-foreground/60"
                 />
                 <div className="flex items-center justify-between mt-3">
@@ -189,17 +181,17 @@ export default function Home() {
                       onClick={toggleListening}
                       className={cn(
                         "relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 border-2",
-                        isListening 
-                          ? "bg-emerald-500 border-emerald-400 shadow-lg shadow-emerald-500/40" 
-                          : "bg-muted/60 border-muted-foreground/20 hover:bg-muted"
+                        isListening
+                          ? "bg-emerald-500 border-emerald-400 shadow-lg shadow-emerald-500/40"
+                          : "bg-muted/60 border-muted-foreground/20 hover:bg-muted",
                       )}
                       aria-label={isListening ? "Stop recording" : "Start recording"}
                     >
-                      <Mic 
+                      <Mic
                         className={cn(
                           "w-5 h-5 transition-all",
-                          isListening ? "text-white animate-pulse" : "text-muted-foreground"
-                        )} 
+                          isListening ? "text-white animate-pulse" : "text-muted-foreground",
+                        )}
                       />
                       {/* Recording indicator */}
                       {isListening && (
@@ -210,14 +202,10 @@ export default function Home() {
                       )}
                     </button>
                   )}
-                  
+
                   {!isSupported && <div />}
-                  
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={!thought.trim() || isAnalyzing}
-                    className="rounded-xl gap-2"
-                  >
+
+                  <Button onClick={handleSubmit} disabled={!thought.trim() || isAnalyzing} className="rounded-xl gap-2">
                     {isAnalyzing ? (
                       <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
                     ) : (
@@ -231,9 +219,7 @@ export default function Home() {
 
             {/* Suggestions */}
             <div className="mt-8 w-full max-w-md">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-4">
-                Common thought patterns
-              </p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-4">Common thought patterns</p>
               <div className="flex flex-wrap justify-center gap-2">
                 {thoughtSuggestions.map((suggestion) => (
                   <button
