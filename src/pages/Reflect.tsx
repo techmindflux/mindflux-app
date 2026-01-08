@@ -1,4 +1,7 @@
-import { TrendingUp, Calendar, Activity, Brain } from "lucide-react";
+import { TrendingUp, Calendar, Activity, Brain, Lock } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 const insights = [
   {
@@ -28,6 +31,34 @@ const insights = [
 ];
 
 export default function Reflect() {
+  const { authType } = useAuth();
+  const navigate = useNavigate();
+  const isGuest = authType === "guest";
+
+  if (isGuest) {
+    return (
+      <main className="min-h-screen bg-background flex flex-col items-center justify-center px-6">
+        <div className="glass-card p-8 max-w-sm w-full text-center animate-fade-in">
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
+            <Lock className="w-8 h-8 text-primary" />
+          </div>
+          <h2 className="font-display text-xl font-medium text-foreground mb-2">
+            Sign In Required
+          </h2>
+          <p className="text-sm text-muted-foreground mb-6">
+            Log in with your Google account to access your stress patterns and personalized insights.
+          </p>
+          <Button
+            onClick={() => navigate("/")}
+            className="w-full rounded-full"
+          >
+            Log In
+          </Button>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-background">
       {/* Header */}

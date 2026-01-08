@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Send, Sparkles, Leaf, Wind, ExternalLink, BookOpen, Video, Headphones, FileText, Moon, Heart, Brain, Smile, Users, Coffee, Zap } from "lucide-react";
+import { ArrowLeft, Send, Sparkles, Leaf, Wind, ExternalLink, BookOpen, Video, Headphones, FileText, Moon, Heart, Brain, Coffee, Zap, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Source {
   id: number;
@@ -105,12 +106,38 @@ const SourcesSection = ({ sources }: { sources: Source[] }) => {
 
 export default function LuminaChat() {
   const navigate = useNavigate();
+  const { authType } = useAuth();
+  const isGuest = authType === "guest";
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  if (isGuest) {
+    return (
+      <main className="min-h-screen bg-background flex flex-col items-center justify-center px-6">
+        <div className="glass-card p-8 max-w-sm w-full text-center animate-fade-in">
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
+            <Lock className="w-8 h-8 text-primary" />
+          </div>
+          <h2 className="font-display text-xl font-medium text-foreground mb-2">
+            Sign In Required
+          </h2>
+          <p className="text-sm text-muted-foreground mb-6">
+            Log in with your Google account to chat with Lumina, your AI wellness companion.
+          </p>
+          <Button
+            onClick={() => navigate("/")}
+            className="w-full rounded-full"
+          >
+            Log In
+          </Button>
+        </div>
+      </main>
+    );
+  }
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
