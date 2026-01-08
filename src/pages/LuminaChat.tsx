@@ -106,7 +106,7 @@ const SourcesSection = ({ sources }: { sources: Source[] }) => {
 
 export default function LuminaChat() {
   const navigate = useNavigate();
-  const { authType } = useAuth();
+  const { authType, logout } = useAuth();
   const isGuest = authType === "guest";
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -114,6 +114,11 @@ export default function LuminaChat() {
   const [isSearching, setIsSearching] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleLogin = async () => {
+    await logout();
+    navigate("/");
+  };
 
   if (isGuest) {
     return (
@@ -129,7 +134,7 @@ export default function LuminaChat() {
             Log in with your Google account to chat with Lumina, your AI wellness companion.
           </p>
           <Button
-            onClick={() => navigate("/")}
+            onClick={handleLogin}
             className="w-full rounded-full"
           >
             Log In

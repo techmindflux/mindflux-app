@@ -31,9 +31,14 @@ const insights = [
 ];
 
 export default function Reflect() {
-  const { authType } = useAuth();
+  const { authType, logout } = useAuth();
   const navigate = useNavigate();
   const isGuest = authType === "guest";
+
+  const handleLogin = async () => {
+    await logout();
+    navigate("/");
+  };
 
   if (isGuest) {
     return (
@@ -49,7 +54,7 @@ export default function Reflect() {
             Log in with your Google account to access your stress patterns and personalized insights.
           </p>
           <Button
-            onClick={() => navigate("/")}
+            onClick={handleLogin}
             className="w-full rounded-full"
           >
             Log In
