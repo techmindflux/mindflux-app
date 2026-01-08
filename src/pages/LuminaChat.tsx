@@ -1,6 +1,23 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Send, Sparkles, Leaf, Wind, ExternalLink, BookOpen, Video, Headphones, FileText, Moon, Heart, Brain, Coffee, Zap, Lock } from "lucide-react";
+import {
+  ArrowLeft,
+  Send,
+  Sparkles,
+  Leaf,
+  Wind,
+  ExternalLink,
+  BookOpen,
+  Video,
+  Headphones,
+  FileText,
+  Moon,
+  Heart,
+  Brain,
+  Coffee,
+  Zap,
+  Lock,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -43,7 +60,7 @@ const renderMessageContent = (content: string) => {
         className="text-primary underline underline-offset-2 hover:text-primary/80 transition-colors"
       >
         {match[1]}
-      </a>
+      </a>,
     );
     lastIndex = match.index + match[0].length;
   }
@@ -116,7 +133,7 @@ export default function LuminaChat() {
   const [isSearching, setIsSearching] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  
+
   // Sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
@@ -134,16 +151,11 @@ export default function LuminaChat() {
           <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
             <Lock className="w-8 h-8 text-primary" />
           </div>
-          <h2 className="font-display text-xl font-medium text-foreground mb-2">
-            Sign In Required
-          </h2>
+          <h2 className="font-display text-xl font-medium text-foreground mb-2">Sign In Required</h2>
           <p className="text-sm text-muted-foreground mb-6">
             Log in with your Google account to chat with Lumina, your AI wellness companion.
           </p>
-          <Button
-            onClick={handleLogin}
-            className="w-full rounded-full"
-          >
+          <Button onClick={handleLogin} className="w-full rounded-full">
             Log In
           </Button>
         </div>
@@ -163,7 +175,8 @@ export default function LuminaChat() {
   const initializeGreeting = useCallback(() => {
     const greeting: Message = {
       role: "assistant",
-      content: "Hello. I'm Lumina, your mental wellness companion. This is a safe space to explore how you're feeling. What's on your mind today?"
+      content:
+        "Hello. I'm Lumina, your mental wellness companion. This is a safe space to explore how you're feeling. What's on your mind today?",
     };
     setMessages([greeting]);
     setCurrentConversationId(null);
@@ -185,10 +198,11 @@ export default function LuminaChat() {
 
       if (error) throw error;
 
-      const loadedMessages: Message[] = messagesData?.map((m) => ({
-        role: m.role as "user" | "assistant",
-        content: m.content,
-      })) || [];
+      const loadedMessages: Message[] =
+        messagesData?.map((m) => ({
+          role: m.role as "user" | "assistant",
+          content: m.content,
+        })) || [];
 
       setMessages(loadedMessages);
       setCurrentConversationId(conversationId);
@@ -215,12 +229,10 @@ export default function LuminaChat() {
   // Create new conversation
   const createConversation = async (firstMessage: string): Promise<string | null> => {
     if (!user?.id) return null;
-    
+
     try {
       // Generate title from first message (first 50 chars)
-      const title = firstMessage.length > 50 
-        ? firstMessage.substring(0, 50) + "..." 
-        : firstMessage;
+      const title = firstMessage.length > 50 ? firstMessage.substring(0, 50) + "..." : firstMessage;
 
       const { data, error } = await supabase
         .from("lumina_conversations")
@@ -259,8 +271,8 @@ export default function LuminaChat() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${SUPABASE_KEY}`,
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
         },
         body: JSON.stringify({ query }),
       });
@@ -292,7 +304,7 @@ export default function LuminaChat() {
 
     // Handle conversation persistence for logged-in users
     let convId = currentConversationId;
-    
+
     if (user?.id) {
       if (!convId) {
         // Create new conversation on first user message
@@ -300,13 +312,13 @@ export default function LuminaChat() {
         if (convId) {
           setCurrentConversationId(convId);
           // Save the greeting message
-          const greetingMsg = messages.find(m => m.role === "assistant");
+          const greetingMsg = messages.find((m) => m.role === "assistant");
           if (greetingMsg) {
             await saveMessage(convId, "assistant", greetingMsg.content);
           }
         }
       }
-      
+
       // Save user message
       if (convId) {
         await saveMessage(convId, "user", userInput);
@@ -319,11 +331,11 @@ export default function LuminaChat() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${SUPABASE_KEY}`,
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
         },
         body: JSON.stringify({
-          messages: updatedMessages.map(m => ({ role: m.role, content: m.content })),
+          messages: updatedMessages.map((m) => ({ role: m.role, content: m.content })),
           isChat: true,
         }),
       });
@@ -333,9 +345,9 @@ export default function LuminaChat() {
       }
 
       const data = await response.json();
-      
+
       // Check if the response suggests resources
-      const shouldSearchSources = 
+      const shouldSearchSources =
         data.content.toLowerCase().includes("here") ||
         data.content.toLowerCase().includes("might help") ||
         data.content.toLowerCase().includes("resource") ||
@@ -346,34 +358,31 @@ export default function LuminaChat() {
 
       let sources: Source[] = [];
       if (shouldSearchSources) {
-        const userMessages = updatedMessages.filter(m => m.role === "user").map(m => m.content);
+        const userMessages = updatedMessages.filter((m) => m.role === "user").map((m) => m.content);
         const searchQuery = userMessages.slice(-2).join(" ");
         sources = await searchSources(searchQuery);
       }
 
-      const assistantMessage: Message = { 
-        role: "assistant", 
+      const assistantMessage: Message = {
+        role: "assistant",
         content: data.content,
-        sources: sources.length > 0 ? sources : undefined
+        sources: sources.length > 0 ? sources : undefined,
       };
-      setMessages(prev => [...prev, assistantMessage]);
+      setMessages((prev) => [...prev, assistantMessage]);
 
       // Save assistant message
       if (user?.id && convId) {
         await saveMessage(convId, "assistant", data.content);
         // Update conversation timestamp
-        await supabase
-          .from("lumina_conversations")
-          .update({ updated_at: new Date().toISOString() })
-          .eq("id", convId);
+        await supabase.from("lumina_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
       }
     } catch (error) {
       console.error("Error sending message:", error);
       const errorMessage: Message = {
         role: "assistant",
-        content: "I'm having trouble connecting right now. Please try again in a moment."
+        content: "I'm having trouble connecting right now. Please try again in a moment.",
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -406,30 +415,30 @@ export default function LuminaChat() {
   ];
 
   const topicCards = [
-    { 
+    {
       shortcut: "/sleep",
       icon: Moon,
-      title: "Improve my sleep quality and wind down for better rest"
+      title: "Improve my sleep quality and wind down for better rest",
     },
-    { 
+    {
       shortcut: "/anxiety",
       icon: Brain,
-      title: "Help me manage anxious thoughts and find calm"
+      title: "Help me manage anxious thoughts and find calm",
     },
-    { 
+    {
       shortcut: "/focus",
       icon: Coffee,
-      title: "Improve my concentration and stay focused"
+      title: "Improve my concentration and stay focused",
     },
-    { 
+    {
       shortcut: "/self-care",
       icon: Heart,
-      title: "Create a self-care routine that works for me"
+      title: "Create a self-care routine that works for me",
     },
-    { 
+    {
       shortcut: "/mindfulness",
       icon: Leaf,
-      title: "Practice being present and reduce overthinking"
+      title: "Practice being present and reduce overthinking",
     },
   ];
 
@@ -440,7 +449,7 @@ export default function LuminaChat() {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleTopicClick = (topic: typeof topicCards[0]) => {
+  const handleTopicClick = (topic: (typeof topicCards)[0]) => {
     setInput(topic.title);
     inputRef.current?.focus();
   };
@@ -475,12 +484,7 @@ export default function LuminaChat() {
 
         {/* Header */}
         <header className="relative z-10 flex items-center gap-4 px-4 py-4 border-b border-border/30">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full"
-            onClick={() => navigate(-1)}
-          >
+          <Button variant="ghost" size="icon" className="rounded-full" onClick={() => navigate(-1)}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="flex items-center gap-3">
@@ -504,22 +508,17 @@ export default function LuminaChat() {
             messages.map((message, index) => (
               <div
                 key={index}
-                className={cn(
-                  "flex animate-fade-in",
-                  message.role === "user" ? "justify-end" : "justify-start"
-                )}
+                className={cn("flex animate-fade-in", message.role === "user" ? "justify-end" : "justify-start")}
               >
                 <div
                   className={cn(
                     "max-w-[85%] rounded-2xl px-4 py-3",
                     message.role === "user"
                       ? "bg-primary text-primary-foreground rounded-br-md"
-                      : "glass-card rounded-bl-md"
+                      : "glass-card rounded-bl-md",
                   )}
                 >
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                    {renderMessageContent(message.content)}
-                  </p>
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{renderMessageContent(message.content)}</p>
                   {message.sources && <SourcesSection sources={message.sources} />}
                 </div>
               </div>
@@ -570,7 +569,7 @@ export default function LuminaChat() {
             <div className="relative">
               <p className="text-xs text-muted-foreground mb-3 flex items-center gap-1.5">
                 <Sparkles className="w-3 h-3 text-primary animate-pulse" />
-                Explore topics
+                Explore threads
               </p>
               <div className="grid grid-cols-2 gap-3">
                 {topicCards.map((topic, index) => (
@@ -579,13 +578,11 @@ export default function LuminaChat() {
                     onClick={() => handleTopicClick(topic)}
                     className={cn(
                       "group text-left p-4 rounded-2xl glass-card border border-border/30 hover:border-primary/40 transition-all duration-300 hover:scale-[1.02]",
-                      cardsVisible 
-                        ? "opacity-100 translate-y-0" 
-                        : "opacity-0 translate-y-4"
+                      cardsVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
                     )}
-                    style={{ 
+                    style={{
                       transitionDelay: `${index * 100}ms`,
-                      transitionProperty: 'opacity, transform, border-color, scale'
+                      transitionProperty: "opacity, transform, border-color, scale",
                     }}
                   >
                     <div className="flex items-center gap-2 mb-2">
