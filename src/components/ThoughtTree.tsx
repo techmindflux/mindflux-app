@@ -12,10 +12,12 @@ interface ThoughtNode {
 interface ThoughtTreeProps {
   originalThought: string;
   nodes: ThoughtNode[];
-  rootCause: string;
+  rootCause: string | null;
+  isLoading?: boolean;
+  onReset?: () => void;
 }
 
-export function ThoughtTree({ originalThought, nodes, rootCause }: ThoughtTreeProps) {
+export function ThoughtTree({ originalThought, nodes, rootCause, isLoading, onReset }: ThoughtTreeProps) {
   const [visibleNodes, setVisibleNodes] = useState<number>(0);
   const [showRootCause, setShowRootCause] = useState(false);
 
@@ -174,12 +176,24 @@ export function ThoughtTree({ originalThought, nodes, rootCause }: ThoughtTreePr
           </div>
 
           {/* Insight section */}
-          <div className="mt-6 p-4 rounded-xl bg-card/50 border border-border/30 mb-24">
+          <div className="mt-6 p-4 rounded-xl bg-card/50 border border-border/30">
             <p className="text-sm text-muted-foreground leading-relaxed text-center">
               Understanding this root helps you see your thought isn't a truth—it's a pattern. 
               <span className="text-foreground font-medium"> You can observe it without being defined by it.</span>
             </p>
           </div>
+        </div>
+      )}
+
+      {/* Reset button */}
+      {onReset && (showRootCause || isLoading) && (
+        <div className="flex justify-center mt-8 mb-24">
+          <button
+            onClick={onReset}
+            className="text-sm text-muted-foreground hover:text-foreground underline transition-colors"
+          >
+            Start over with a new thought
+          </button>
         </div>
       )}
     </div>

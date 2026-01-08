@@ -33,11 +33,9 @@ const App = () => (
               <Route path="/" element={<Auth />} />
               <Route element={<AppLayout />}>
                 <Route path="/home" element={<Home />} />
-                <Route path="/explore" element={<Explore />} />
                 <Route path="/reflect" element={<Reflect />} />
-              <Route path="/lumina" element={<LuminaChat />} />
-              <Route path="/library/:topicId" element={<LibraryTopic />} />
-              <Route path="/explore/thought-unpacker" element={<ThoughtUnpacker />} />
+                <Route path="/lumina" element={<LuminaChat />} />
+                <Route path="/library/:topicId" element={<LibraryTopic />} />
               </Route>
               <Route path="/check-in" element={<CheckInOptions />} />
               <Route path="/check-in/voice" element={<VoiceCheckIn />} />
