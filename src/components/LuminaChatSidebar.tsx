@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { MessageSquare, Plus, Trash2, PanelLeftClose, PanelLeft, BookOpen, History, Brain, Heart, Moon, Leaf, Sparkles, Wind } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -128,8 +129,10 @@ export function LuminaChatSidebar({
     }
   };
 
+  const navigate = useNavigate();
+
   const handleTopicClick = (topic: typeof libraryTopics[0]) => {
-    onSelectTopic?.(`Tell me about ${topic.title.toLowerCase()} techniques and strategies.`);
+    navigate(`/library/${topic.id}`);
   };
 
   // Group conversations by date

@@ -15,6 +15,7 @@ import VoiceCheckIn from "./pages/VoiceCheckIn";
 import ManualCheckIn from "./pages/ManualCheckIn";
 import CoachingSession from "./pages/CoachingSession";
 import LuminaChat from "./pages/LuminaChat";
+import LibraryTopic from "./pages/LibraryTopic";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,7 +34,8 @@ const App = () => (
                 <Route path="/home" element={<Home />} />
                 <Route path="/explore" element={<Explore />} />
                 <Route path="/reflect" element={<Reflect />} />
-                <Route path="/lumina" element={<LuminaChat />} />
+              <Route path="/lumina" element={<LuminaChat />} />
+              <Route path="/library/:topicId" element={<LibraryTopic />} />
               </Route>
               <Route path="/check-in" element={<CheckInOptions />} />
               <Route path="/check-in/voice" element={<VoiceCheckIn />} />
