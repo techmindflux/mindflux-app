@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
 
 interface CheckIn {
   id: string;
@@ -14,17 +15,24 @@ interface CheckIn {
 }
 
 const categoryColors: Record<string, string> = {
-  overwhelmed: "text-rose-500",
-  activated: "text-amber-500",
-  drained: "text-sky-500",
-  grounded: "text-emerald-500",
+  ruminating: "text-violet-500",
+  anxious: "text-amber-500",
+  critical: "text-rose-500",
+  clear: "text-emerald-500",
 };
 
 const categoryBg: Record<string, string> = {
-  overwhelmed: "bg-rose-500/20",
-  activated: "bg-amber-400/20",
-  drained: "bg-sky-400/20",
-  grounded: "bg-emerald-400/20",
+  ruminating: "bg-violet-500/20",
+  anxious: "bg-amber-400/20",
+  critical: "bg-rose-500/20",
+  clear: "bg-emerald-400/20",
+};
+
+const categoryChartColors: Record<string, string> = {
+  ruminating: "#8b5cf6",
+  anxious: "#f59e0b",
+  critical: "#f43f5e",
+  clear: "#10b981",
 };
 
 export default function Reflect() {
@@ -227,33 +235,158 @@ export default function Reflect() {
             ))}
           </section>
 
-          {/* Patterns Section */}
+          {/* Patterns Section with Charts */}
           <section className="px-6 pb-8">
             <h2 className="font-display text-lg font-medium text-foreground mb-4">
               Patterns & Insights
             </h2>
             
             {checkIns.length > 0 ? (
-              <div className="glass-card p-6 animate-slide-up" style={{ animationDelay: "300ms", animationFillMode: "backwards" }}>
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/10 opacity-50 rounded-3xl" />
-                
-                <div className="relative space-y-4">
-                  {mostCommonCategory && (
-                    <div className="flex items-center gap-3">
-                      <div className={`w-3 h-3 rounded-full ${categoryBg[mostCommonCategory]}`} />
-                      <p className="text-sm text-foreground">
-                        Most frequent state:{" "}
-                        <span className={`font-medium capitalize ${categoryColors[mostCommonCategory]}`}>
-                          {mostCommonCategory}
-                        </span>
-                      </p>
-                    </div>
-                  )}
+              <div className="space-y-4">
+                {/* Category Distribution Chart */}
+                <div className="glass-card p-6 animate-slide-up" style={{ animationDelay: "300ms", animationFillMode: "backwards" }}>
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/10 opacity-50 rounded-3xl" />
                   
-                  <p className="text-sm text-muted-foreground">
-                    You've completed {checkIns.length} check-in{checkIns.length !== 1 ? "s" : ""} so far.
-                    {checkIns.length >= 5 && " Keep tracking to uncover deeper patterns."}
-                  </p>
+                  <div className="relative">
+                    <h3 className="text-sm font-medium text-foreground mb-4">Thought Pattern Distribution</h3>
+                    
+                    <div className="flex items-center gap-6">
+                      {/* Donut Chart */}
+                      <div className="w-32 h-32 flex-shrink-0">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={Object.entries(categoryCounts).map(([name, value]) => ({ name, value }))}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={35}
+                              outerRadius={55}
+                              paddingAngle={3}
+                              dataKey="value"
+                              stroke="none"
+                            >
+                              {Object.entries(categoryCounts).map(([category]) => (
+                                <Cell 
+                                  key={category} 
+                                  fill={categoryChartColors[category] || "#6b7280"} 
+                                />
+                              ))}
+                            </Pie>
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                      
+                      {/* Legend */}
+                      <div className="flex-1 space-y-2">
+                        {Object.entries(categoryCounts)
+                          .sort((a, b) => b[1] - a[1])
+                          .map(([category, count]) => (
+                            <div key={category} className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-3 h-3 rounded-full" 
+                                  style={{ backgroundColor: categoryChartColors[category] || "#6b7280" }}
+                                />
+                                <span className="text-sm capitalize text-foreground">{category}</span>
+                              </div>
+                              <span className="text-sm font-medium text-muted-foreground">
+                                {Math.round((count / checkIns.length) * 100)}%
+                              </span>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Intensity Trend Chart */}
+                {checkIns.length >= 3 && (
+                  <div className="glass-card p-6 animate-slide-up" style={{ animationDelay: "400ms", animationFillMode: "backwards" }}>
+                    <div className="absolute inset-0 bg-gradient-to-br from-accent/10 to-primary/10 opacity-50 rounded-3xl" />
+                    
+                    <div className="relative">
+                      <h3 className="text-sm font-medium text-foreground mb-4">Intensity Over Time</h3>
+                      
+                      <div className="h-40">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart
+                            data={[...checkIns]
+                              .reverse()
+                              .slice(-10)
+                              .map((c) => ({
+                                date: new Date(c.created_at).toLocaleDateString("en-US", { 
+                                  month: "short", 
+                                  day: "numeric" 
+                                }),
+                                intensity: c.intensity,
+                                category: c.category,
+                              }))}
+                            margin={{ top: 5, right: 5, left: -20, bottom: 5 }}
+                          >
+                            <defs>
+                              <linearGradient id="intensityGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
+                                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                              </linearGradient>
+                            </defs>
+                            <XAxis 
+                              dataKey="date" 
+                              axisLine={false}
+                              tickLine={false}
+                              tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                            />
+                            <YAxis 
+                              domain={[0, 100]} 
+                              axisLine={false}
+                              tickLine={false}
+                              tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                            />
+                            <Tooltip
+                              contentStyle={{
+                                backgroundColor: "hsl(var(--card))",
+                                border: "1px solid hsl(var(--border))",
+                                borderRadius: "12px",
+                                boxShadow: "0 10px 40px -10px rgba(0,0,0,0.2)",
+                              }}
+                              labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 500 }}
+                              itemStyle={{ color: "hsl(var(--muted-foreground))" }}
+                            />
+                            <Area
+                              type="monotone"
+                              dataKey="intensity"
+                              stroke="hsl(var(--primary))"
+                              strokeWidth={2}
+                              fill="url(#intensityGradient)"
+                            />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Summary Stats */}
+                <div className="glass-card p-6 animate-slide-up" style={{ animationDelay: "500ms", animationFillMode: "backwards" }}>
+                  <div className="absolute inset-0 bg-gradient-to-br from-secondary/20 to-muted/20 opacity-50 rounded-3xl" />
+                  
+                  <div className="relative grid grid-cols-2 gap-4">
+                    <div className="text-center">
+                      <p className="text-3xl font-display font-medium text-foreground">{checkIns.length}</p>
+                      <p className="text-xs text-muted-foreground mt-1">Total Check-ins</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-3xl font-display font-medium text-foreground">{avgIntensity ?? "—"}</p>
+                      <p className="text-xs text-muted-foreground mt-1">Avg Intensity</p>
+                    </div>
+                    {mostCommonCategory && (
+                      <div className="col-span-2 text-center pt-2 border-t border-border/50">
+                        <p className={`text-lg font-medium capitalize ${categoryColors[mostCommonCategory]}`}>
+                          {mostCommonCategory}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">Most Frequent Pattern</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             ) : (
@@ -268,7 +401,7 @@ export default function Reflect() {
                     Start Your Journey
                   </h3>
                   <p className="text-sm text-muted-foreground mt-2 max-w-[250px]">
-                    Complete a few stress check-ins to uncover patterns and personalized insights about your wellbeing.
+                    Complete a few thought check-ins to uncover patterns and personalized insights about your mindset.
                   </p>
                 </div>
               </div>
