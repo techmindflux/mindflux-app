@@ -188,24 +188,24 @@ export default function Home() {
                     <button
                       onClick={toggleListening}
                       className={cn(
-                        "relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300",
+                        "relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 border-2",
                         isListening 
-                          ? "bg-white/90 shadow-lg shadow-white/20" 
-                          : "bg-rose-500/80 hover:bg-rose-500"
+                          ? "bg-emerald-500 border-emerald-400 shadow-lg shadow-emerald-500/40" 
+                          : "bg-muted/60 border-muted-foreground/20 hover:bg-muted"
                       )}
                       aria-label={isListening ? "Stop recording" : "Start recording"}
                     >
                       <Mic 
                         className={cn(
-                          "w-5 h-5 transition-colors",
-                          isListening ? "text-primary" : "text-white"
+                          "w-5 h-5 transition-all",
+                          isListening ? "text-white animate-pulse" : "text-muted-foreground"
                         )} 
                       />
-                      {/* Recording pulse animation */}
+                      {/* Recording indicator */}
                       {isListening && (
                         <>
-                          <span className="absolute inset-0 rounded-full bg-white/50 animate-ping" />
-                          <span className="absolute -inset-1 rounded-full border-2 border-white/30 animate-pulse" />
+                          <span className="absolute inset-0 rounded-full bg-emerald-400/50 animate-ping" />
+                          <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500 animate-pulse border-2 border-background" />
                         </>
                       )}
                     </button>
