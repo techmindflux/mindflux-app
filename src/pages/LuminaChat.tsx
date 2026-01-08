@@ -587,8 +587,8 @@ export default function LuminaChat() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Quick actions and topic cards (show when no messages or after greeting) */}
-        {messages.length <= 1 && !isLoadingConversation && (
+        {/* Quick actions and topic cards (hide during root analysis) */}
+        {messages.length <= 1 && !isLoadingConversation && !rootAnalysisContext && (
           <div className="px-4 pb-4 space-y-4">
             {/* Quick action pills */}
             <div className="flex gap-2 overflow-x-auto pb-1">
