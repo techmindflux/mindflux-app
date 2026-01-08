@@ -40,28 +40,57 @@ interface Message {
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-// Helper function to render markdown links as clickable
+// Helper function to render markdown as styled elements
 const renderMessageContent = (content: string) => {
-  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  // Combined regex for bold (**text** or *text*), italic (_text_), and links [text](url)
+  const markdownRegex = /(\*\*([^*]+)\*\*)|(\*([^*]+)\*)|(_([^_]+)_)|(\[([^\]]+)\]\(([^)]+)\))/g;
   const parts: (string | JSX.Element)[] = [];
   let lastIndex = 0;
   let match;
+  let keyIndex = 0;
 
-  while ((match = linkRegex.exec(content)) !== null) {
+  while ((match = markdownRegex.exec(content)) !== null) {
+    // Add text before the match
     if (match.index > lastIndex) {
       parts.push(content.slice(lastIndex, match.index));
     }
-    parts.push(
-      <a
-        key={match.index}
-        href={match[2]}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-primary underline underline-offset-2 hover:text-primary/80 transition-colors"
-      >
-        {match[1]}
-      </a>,
-    );
+
+    if (match[1]) {
+      // Bold with **text**
+      parts.push(
+        <strong key={keyIndex++} className="font-semibold">
+          {match[2]}
+        </strong>
+      );
+    } else if (match[3]) {
+      // Italic/emphasis with *text*
+      parts.push(
+        <em key={keyIndex++} className="italic">
+          {match[4]}
+        </em>
+      );
+    } else if (match[5]) {
+      // Italic with _text_
+      parts.push(
+        <em key={keyIndex++} className="italic">
+          {match[6]}
+        </em>
+      );
+    } else if (match[7]) {
+      // Link [text](url)
+      parts.push(
+        <a
+          key={keyIndex++}
+          href={match[9]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary underline underline-offset-2 hover:text-primary/80 transition-colors"
+        >
+          {match[8]}
+        </a>
+      );
+    }
+
     lastIndex = match.index + match[0].length;
   }
 
