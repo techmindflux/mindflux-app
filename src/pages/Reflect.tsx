@@ -33,14 +33,14 @@ const insights = [
 export default function Reflect() {
   const { authType, logout } = useAuth();
   const navigate = useNavigate();
-  const isGuest = authType === "guest";
+  const isBlocked = authType !== "google";
 
   const handleLogin = async () => {
     await logout();
-    navigate("/");
+    navigate("/", { replace: true });
   };
 
-  if (isGuest) {
+  if (isBlocked) {
     return (
       <main className="min-h-screen bg-background flex flex-col items-center justify-center px-6">
         <div className="glass-card p-8 max-w-sm w-full text-center animate-fade-in">
