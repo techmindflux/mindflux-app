@@ -16,7 +16,8 @@ interface CheckInData {
   feelings: string[];
 }
 
-const MAX_MESSAGES = 15;
+const MAX_MESSAGES_GUEST = 5;
+const MAX_MESSAGES_GOOGLE = 15;
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -24,7 +25,10 @@ const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 export default function CoachingSession() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, authType, logout } = useAuth();
+  
+  const isGoogleUser = authType === "google";
+  const maxMessages = isGoogleUser ? MAX_MESSAGES_GOOGLE : MAX_MESSAGES_GUEST;
   
   const checkInData = location.state as CheckInData | null;
   
@@ -155,7 +159,7 @@ export default function CoachingSession() {
       setCoachMessageCount(newCount);
       
       // Check if session should end
-      if (newCount >= MAX_MESSAGES || 
+      if (newCount >= maxMessages || 
           data.content.toLowerCase().includes("session is complete") ||
           data.content.toLowerCase().includes("we've gone far enough") ||
           data.content.toLowerCase().includes("let it integrate")) {
@@ -212,7 +216,7 @@ export default function CoachingSession() {
             <div>
               <h1 className="text-foreground font-medium text-base">Coaching Session</h1>
               <p className="text-muted-foreground text-xs">
-                {coachMessageCount}/{MAX_MESSAGES} messages
+                {coachMessageCount}/{maxMessages} messages
               </p>
             </div>
           </div>
@@ -318,9 +322,24 @@ export default function CoachingSession() {
             </div>
           )}
           
-          {!isSessionEnded && coachMessageCount >= 12 && (
+          {!isSessionEnded && coachMessageCount >= maxMessages - 3 && (
             <p className="text-center text-muted-foreground text-xs mt-2">
-              Session nearing end • {MAX_MESSAGES - coachMessageCount} messages remaining
+              Session nearing end • {maxMessages - coachMessageCount} messages remaining
+            </p>
+          )}
+          
+          {!isGoogleUser && !isSessionEnded && (
+            <p className="text-center text-muted-foreground text-xs mt-2">
+              Guest limit: {coachMessageCount}/{maxMessages} messages •{" "}
+              <button 
+                onClick={async () => {
+                  await logout();
+                  navigate("/", { replace: true });
+                }}
+                className="text-primary underline underline-offset-2 hover:text-primary/80"
+              >
+                Log in for 15 messages
+              </button>
             </p>
           )}
         </div>
