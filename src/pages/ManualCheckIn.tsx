@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { supabase } from "@/integrations/supabase/client";
 
-interface StressCategory {
+interface ThoughtCategory {
   id: string;
   title: string;
   subtitle: string;
@@ -17,68 +17,68 @@ interface StressCategory {
   textColor: string;
   bubbleColor: string;
   bubbleTextColor: string;
-  feelings: string[];
+  thoughts: string[];
 }
 
-const stressCategories: StressCategory[] = [
+const thoughtCategories: ThoughtCategory[] = [
   {
-    id: "overwhelmed",
-    title: "Overwhelmed",
-    subtitle: "High tension, racing thoughts",
-    gradient: "from-rose-500 via-red-500 to-orange-500",
+    id: "ruminating",
+    title: "Ruminating",
+    subtitle: "Stuck in the past, replaying",
+    gradient: "from-violet-500 via-purple-500 to-indigo-500",
+    shadowColor: "shadow-[0_8px_40px_-8px_rgba(139,92,246,0.5)]",
+    textColor: "text-white",
+    bubbleColor: "bg-gradient-to-br from-violet-400 to-purple-500",
+    bubbleTextColor: "text-white",
+    thoughts: [
+      "Replaying", "Regretting", "Dwelling", "Looping", "Rehashing",
+      "Overanalyzing", "Wishing", "Blaming", "Second-guessing", "Fixating",
+      "Brooding", "Mulling", "Obsessing", "Haunted", "Stuck"
+    ],
+  },
+  {
+    id: "anxious",
+    title: "Anxious",
+    subtitle: "Worrying about what's next",
+    gradient: "from-amber-400 via-orange-400 to-rose-400",
+    shadowColor: "shadow-[0_8px_40px_-8px_rgba(251,146,60,0.5)]",
+    textColor: "text-white",
+    bubbleColor: "bg-gradient-to-br from-amber-400 to-orange-500",
+    bubbleTextColor: "text-white",
+    thoughts: [
+      "Worrying", "Catastrophizing", "What-ifs", "Spiraling", "Overthinking",
+      "Fearing", "Anticipating", "Dreading", "Racing", "Scattered",
+      "Restless", "Panicking", "Hypervigilant", "Projecting", "Doom-scrolling"
+    ],
+  },
+  {
+    id: "critical",
+    title: "Critical",
+    subtitle: "Harsh inner voice, judging",
+    gradient: "from-rose-500 via-red-500 to-pink-500",
     shadowColor: "shadow-[0_8px_40px_-8px_rgba(244,63,94,0.5)]",
     textColor: "text-white",
     bubbleColor: "bg-gradient-to-br from-rose-400 to-red-500",
     bubbleTextColor: "text-white",
-    feelings: [
-      "Stressed", "Anxious", "Pressured", "Panicked", "Frazzled",
-      "Tense", "Irritated", "Agitated", "Restless", "Nervous",
-      "Worried", "On Edge", "Scattered", "Racing", "Hyper-vigilant"
+    thoughts: [
+      "Judging", "Comparing", "Criticizing", "Doubting", "Shaming",
+      "Not enough", "Failing", "Imposter", "Perfectionist", "Self-attacking",
+      "Belittling", "Harsh", "Unworthy", "Dismissive", "Inadequate"
     ],
   },
   {
-    id: "activated",
-    title: "Activated",
-    subtitle: "Alert, productive pressure",
-    gradient: "from-amber-400 via-yellow-400 to-orange-300",
-    shadowColor: "shadow-[0_8px_40px_-8px_rgba(251,191,36,0.5)]",
-    textColor: "text-amber-950",
-    bubbleColor: "bg-gradient-to-br from-amber-300 to-yellow-400",
-    bubbleTextColor: "text-amber-950",
-    feelings: [
-      "Focused", "Motivated", "Driven", "Energized", "Alert",
-      "Determined", "Engaged", "Pumped", "Eager", "Challenged",
-      "Ambitious", "Purposeful", "Ready", "Sharp", "In the Zone"
-    ],
-  },
-  {
-    id: "drained",
-    title: "Drained",
-    subtitle: "Exhausted, low energy",
-    gradient: "from-sky-400 via-blue-400 to-indigo-400",
-    shadowColor: "shadow-[0_8px_40px_-8px_rgba(56,189,248,0.5)]",
-    textColor: "text-white",
-    bubbleColor: "bg-gradient-to-br from-sky-400 to-blue-500",
-    bubbleTextColor: "text-white",
-    feelings: [
-      "Exhausted", "Tired", "Burned Out", "Depleted", "Fatigued",
-      "Unmotivated", "Foggy", "Heavy", "Numb", "Empty",
-      "Discouraged", "Spent", "Overwhelmed", "Flat", "Weary"
-    ],
-  },
-  {
-    id: "grounded",
-    title: "Grounded",
-    subtitle: "Calm, balanced, at ease",
-    gradient: "from-emerald-400 via-green-400 to-teal-400",
+    id: "clear",
+    title: "Clear",
+    subtitle: "Present, calm, focused",
+    gradient: "from-emerald-400 via-teal-400 to-cyan-400",
     shadowColor: "shadow-[0_8px_40px_-8px_rgba(52,211,153,0.5)]",
     textColor: "text-emerald-950",
-    bubbleColor: "bg-gradient-to-br from-emerald-400 to-green-500",
+    bubbleColor: "bg-gradient-to-br from-emerald-400 to-teal-500",
     bubbleTextColor: "text-emerald-950",
-    feelings: [
-      "Calm", "Peaceful", "Relaxed", "Balanced", "Content",
-      "At Ease", "Centered", "Comfortable", "Steady", "Grateful",
-      "Present", "Mellow", "Tranquil", "Composed", "Rested"
+    thoughts: [
+      "Present", "Calm", "Focused", "Grounded", "Peaceful",
+      "Accepting", "Curious", "Open", "Grateful", "Hopeful",
+      "Content", "Balanced", "Centered", "Flowing", "Aware"
     ],
   },
 ];
@@ -90,17 +90,17 @@ const contextOptions = {
 };
 
 const reflectionPrompts = [
-  { id: "trigger", label: "What triggered this?", icon: "⚡" },
+  { id: "trigger", label: "What triggered this thought?", icon: "⚡" },
   { id: "body", label: "Where do I feel it in my body?", icon: "🫀" },
   { id: "need", label: "What do I need right now?", icon: "🌱" },
-  { id: "thought", label: "What thought keeps repeating?", icon: "💭" },
+  { id: "pattern", label: "Is this a familiar pattern?", icon: "🔄" },
 ];
 
 export default function ManualCheckIn() {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading, authType, user } = useAuth();
   const [step, setStep] = useState<"category" | "feeling" | "context">("category");
-  const [selectedCategory, setSelectedCategory] = useState<StressCategory | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<ThoughtCategory | null>(null);
   const [selectedFeelings, setSelectedFeelings] = useState<string[]>([]);
   const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
   const [selectedCompanions, setSelectedCompanions] = useState<string[]>([]);
@@ -160,7 +160,7 @@ export default function ManualCheckIn() {
     }
   }, [isAuthenticated, isLoading, navigate]);
 
-  const handleCategorySelect = (category: StressCategory) => {
+  const handleCategorySelect = (category: ThoughtCategory) => {
     setSelectedCategory(category);
     setStep("feeling");
   };
@@ -334,7 +334,7 @@ export default function ManualCheckIn() {
             {/* Title */}
             <div className="text-center mb-10 animate-fade-in">
               <h1 className="text-2xl font-display font-light text-foreground mb-2 italic">
-                How does your stress feel right now?
+                What's the nature of your thoughts?
               </h1>
               <p className="text-muted-foreground text-sm">
                 Tap the one that resonates most
@@ -344,7 +344,7 @@ export default function ManualCheckIn() {
             {/* Category Grid */}
             <div className="flex-1 flex items-center justify-center">
               <div className="grid grid-cols-2 gap-5 w-full max-w-sm">
-                {stressCategories.map((category, index) => (
+                {thoughtCategories.map((category, index) => (
                   <button
                     key={category.id}
                     onClick={() => handleCategorySelect(category)}
@@ -377,7 +377,7 @@ export default function ManualCheckIn() {
             {/* Bottom hint */}
             <div className="text-center mt-8 animate-fade-in" style={{ animationDelay: "400ms" }}>
               <p className="text-muted-foreground/60 text-xs">
-                This helps us understand your current state
+                This helps us understand your thought patterns
               </p>
             </div>
           </>
@@ -386,7 +386,7 @@ export default function ManualCheckIn() {
             {/* Title */}
             <div className="text-center mb-6 animate-fade-in">
               <h1 className="text-2xl font-display font-light text-foreground mb-2 italic">
-                What best describes your {selectedCategory.title.toLowerCase()} feeling?
+                What's your mind doing right now?
               </h1>
               <p className="text-muted-foreground text-sm">
                 Select all that apply
@@ -396,12 +396,12 @@ export default function ManualCheckIn() {
             {/* Feelings Grid - Scrollable */}
             <div className="flex-1 overflow-y-auto pb-24 -mx-2 px-2">
               <div className="grid grid-cols-3 gap-3">
-                {selectedCategory.feelings.map((feeling, index) => {
-                  const isSelected = selectedFeelings.includes(feeling);
+                {selectedCategory.thoughts.map((thought, index) => {
+                  const isSelected = selectedFeelings.includes(thought);
                   return (
                     <button
-                      key={feeling}
-                      onClick={() => toggleFeeling(feeling)}
+                      key={thought}
+                      onClick={() => toggleFeeling(thought)}
                       className={`
                         aspect-square rounded-full 
                         ${selectedCategory.bubbleColor}
@@ -421,7 +421,7 @@ export default function ManualCheckIn() {
                       }}
                     >
                       <span className={`text-sm font-medium ${selectedCategory.bubbleTextColor} leading-tight`}>
-                        {feeling}
+                        {thought}
                       </span>
                     </button>
                   );
@@ -441,16 +441,16 @@ export default function ManualCheckIn() {
                       <p className="text-foreground font-medium text-sm">
                         {selectedFeelings.length === 1 
                           ? selectedFeelings[0] 
-                          : `${selectedFeelings.length} feelings selected`
+                          : `${selectedFeelings.length} thoughts selected`
                         }
                       </p>
                       <p className="text-muted-foreground text-xs">
-                        feeling {selectedCategory.title.toLowerCase()}
+                        {selectedCategory.title.toLowerCase()} thinking
                       </p>
                     </div>
                   ) : (
                     <p className="text-muted-foreground text-sm">
-                      Select emotions above
+                      Select thoughts above
                     </p>
                   )}
                 </div>
