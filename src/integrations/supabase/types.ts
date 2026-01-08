@@ -14,7 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      stress_checkins: {
+        Row: {
+          activities: string[] | null
+          category: string
+          companions: string[] | null
+          created_at: string
+          feelings: string[]
+          freeform_note: string | null
+          id: string
+          intensity: number | null
+          journal_prompts: Json | null
+          locations: string[] | null
+          user_id: string
+        }
+        Insert: {
+          activities?: string[] | null
+          category: string
+          companions?: string[] | null
+          created_at?: string
+          feelings: string[]
+          freeform_note?: string | null
+          id?: string
+          intensity?: number | null
+          journal_prompts?: Json | null
+          locations?: string[] | null
+          user_id: string
+        }
+        Update: {
+          activities?: string[] | null
+          category?: string
+          companions?: string[] | null
+          created_at?: string
+          feelings?: string[]
+          freeform_note?: string | null
+          id?: string
+          intensity?: number | null
+          journal_prompts?: Json | null
+          locations?: string[] | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { X, ArrowLeft, ArrowRight, Plus, ChevronDown, ChevronUp } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
+import { supabase } from "@/integrations/supabase/client";
 
 interface StressCategory {
   id: string;
@@ -96,7 +97,7 @@ const reflectionPrompts = [
 
 export default function ManualCheckIn() {
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, authType, user } = useAuth();
   const [step, setStep] = useState<"category" | "feeling" | "context">("category");
   const [selectedCategory, setSelectedCategory] = useState<StressCategory | null>(null);
   const [selectedFeelings, setSelectedFeelings] = useState<string[]>([]);
@@ -201,7 +202,26 @@ export default function ManualCheckIn() {
     return palette[3];
   };
 
-  const handleCompleteCheckIn = () => {
+  const handleCompleteCheckIn = async () => {
+    // Save check-in to database for Google users
+    if (authType === "google" && user?.id && selectedCategory) {
+      try {
+        await supabase.from("stress_checkins").insert({
+          user_id: user.id,
+          category: selectedCategory.id,
+          feelings: selectedFeelings,
+          intensity: feelingIntensity,
+          activities: selectedActivities,
+          companions: selectedCompanions,
+          locations: selectedLocations,
+          journal_prompts: promptResponses,
+          freeform_note: freeformNote || null,
+        });
+      } catch (error) {
+        console.error("Failed to save check-in:", error);
+      }
+    }
+
     // Navigate to coaching session with check-in data
     navigate("/coaching-session", {
       state: {
