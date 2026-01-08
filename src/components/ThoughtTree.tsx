@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Lightbulb, ChevronDown } from "lucide-react";
+import { RootAnalysis } from "@/components/RootAnalysis";
 
 interface ThoughtNode {
   id: string;
@@ -182,6 +183,9 @@ export function ThoughtTree({ originalThought, nodes, rootCause, isLoading, onRe
               <span className="text-foreground font-medium"> You can observe it without being defined by it.</span>
             </p>
           </div>
+
+          {/* Root Analysis Feature */}
+          <RootAnalysis rootCause={rootCause} originalThought={originalThought} />
         </div>
       )}
 
