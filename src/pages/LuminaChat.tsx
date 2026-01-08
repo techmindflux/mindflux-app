@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   Send,
@@ -125,6 +125,7 @@ const SourcesSection = ({ sources }: { sources: Source[] }) => {
 
 export default function LuminaChat() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { authType, logout, user } = useAuth();
   const isBlocked = authType !== "google";
   const [messages, setMessages] = useState<Message[]>([]);
@@ -138,6 +139,9 @@ export default function LuminaChat() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
+
+  // Check for root analysis context passed from Thought Unpacker
+  const rootAnalysisContext = (location.state as { rootAnalysis?: { rootCause: string; originalThought: string } })?.rootAnalysis;
 
   const handleLogin = async () => {
     await logout();
@@ -173,14 +177,23 @@ export default function LuminaChat() {
 
   // Initialize with greeting for new conversations
   const initializeGreeting = useCallback(() => {
-    const greeting: Message = {
-      role: "assistant",
-      content:
-        "Hello. I'm Lumina, your mental wellness companion. This is a safe space to explore how you're feeling. What's on your mind today?",
-    };
-    setMessages([greeting]);
+    // Check if we have root analysis context from Thought Unpacker
+    if (rootAnalysisContext) {
+      const contextGreeting: Message = {
+        role: "assistant",
+        content: `I see you've been exploring your thoughts. You started with: *"${rootAnalysisContext.originalThought}"*\n\nAnd discovered this root cause: **${rootAnalysisContext.rootCause}**\n\nThis is a meaningful insight. Let's explore this together — understanding where our thoughts come from is the first step to freedom from them.\n\nWhat feels most true about this root cause for you?`,
+      };
+      setMessages([contextGreeting]);
+    } else {
+      const greeting: Message = {
+        role: "assistant",
+        content:
+          "Hello. I'm Lumina, your mental wellness companion. This is a safe space to explore how you're feeling. What's on your mind today?",
+      };
+      setMessages([greeting]);
+    }
     setCurrentConversationId(null);
-  }, []);
+  }, [rootAnalysisContext]);
 
   useEffect(() => {
     initializeGreeting();
