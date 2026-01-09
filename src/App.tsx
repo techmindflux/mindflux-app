@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { AuthProvider } from "@/hooks/useAuth";
+import { LanguageProvider } from "@/hooks/useLanguage";
 import { AppLayout } from "@/layouts/AppLayout";
 import Auth from "./pages/Auth";
 import Home from "./pages/Home";
@@ -22,26 +23,28 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Auth />} />
-              <Route element={<AppLayout />}>
-                <Route path="/home" element={<Home />} />
-                <Route path="/reflect" element={<Reflect />} />
-                <Route path="/lumina" element={<LuminaChat />} />
-                <Route path="/library/:topicId" element={<LibraryTopic />} />
-              </Route>
-              <Route path="/check-in/manual" element={<ManualCheckIn />} />
-              <Route path="/coaching-session" element={<CoachingSession />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Auth />} />
+                <Route element={<AppLayout />}>
+                  <Route path="/home" element={<Home />} />
+                  <Route path="/reflect" element={<Reflect />} />
+                  <Route path="/lumina" element={<LuminaChat />} />
+                  <Route path="/library/:topicId" element={<LibraryTopic />} />
+                </Route>
+                <Route path="/check-in/manual" element={<ManualCheckIn />} />
+                <Route path="/coaching-session" element={<CoachingSession />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
+      </LanguageProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );
