@@ -136,7 +136,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, questionCount = 0, isChat = false } = await req.json();
+    const { messages, questionCount = 0, isChat = false, language = "en" } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) {
@@ -148,6 +148,16 @@ serve(async (req) => {
     if (isChat) {
       // Chat mode - mental coach with solutions and resources
       systemPrompt = LUMINA_CHAT_SYSTEM_PROMPT;
+      
+      // Add Hindi instruction if language is Hindi
+      if (language === "hi") {
+        systemPrompt += `\n\n## CRITICAL LANGUAGE INSTRUCTION
+You MUST respond entirely in Hindi (Devanagari script). 
+- Use Hindi for ALL responses, including greetings, explanations, and suggestions
+- Do not use English words unless they are commonly used in Hindi conversations (like "stress", "mindfulness")
+- Keep your warm, supportive tone while speaking Hindi
+- Format resource links with Hindi descriptions: [हिंदी विवरण](URL)`;
+      }
     } else {
       // Check-in mode logic
       systemPrompt = LUMINA_SYSTEM_PROMPT;
