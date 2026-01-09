@@ -1,6 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageToggle } from "@/components/LanguageToggle";
 import { Button } from "@/components/ui/button";
 import { LogOut, Sparkles, Send, Mic } from "lucide-react";
 import { AppGuideChat } from "@/components/AppGuideChat";
@@ -19,16 +21,13 @@ interface ThoughtNode {
   isRoot?: boolean;
 }
 
-const thoughtSuggestions = [
-  "I'm not good enough for this",
-  "Everyone is judging me",
-  "I'll never be successful",
-  "Something bad is going to happen",
-];
-
 export default function Home() {
   const navigate = useNavigate();
   const { isAuthenticated, authType, logout, user, isLoading } = useAuth();
+  const { t } = useLanguage();
+
+  // Thought suggestions based on language
+  const thoughtSuggestions = [t.suggestion1, t.suggestion2, t.suggestion3, t.suggestion4];
 
   // Thought Unpacker state
   const [thought, setThought] = useState("");
@@ -135,13 +134,14 @@ export default function Home() {
       <header className="relative z-10 flex items-center justify-between px-6 pt-14 pb-4">
         <div className="animate-fade-in">
           <p className="text-sm font-medium text-muted-foreground tracking-wide uppercase">
-            {authType === "google" ? `Welcome, ${displayName || "back"}` : "Hello, Guest"}
+            {authType === "google" ? `${t.welcome}, ${displayName || t.back}` : t.helloGuest}
           </p>
-          <h1 className="text-3xl font-display font-light text-foreground mt-1">Your Sanctuary</h1>
+          <h1 className="text-3xl font-display font-light text-foreground mt-1">{t.yourSanctuary}</h1>
         </div>
         <div className="flex items-center gap-2">
+          <LanguageToggle />
           <ThemeToggle />
-          <Button variant="glass" size="icon" onClick={handleLogout} className="rounded-full" aria-label="Sign out">
+          <Button variant="glass" size="icon" onClick={handleLogout} className="rounded-full" aria-label={t.signOut}>
             <LogOut className="h-5 w-5 text-foreground" />
           </Button>
         </div>
@@ -158,7 +158,7 @@ export default function Home() {
             </div>
 
             {/* Title */}
-            <h2 className="text-2xl font-display font-medium text-foreground mb-2">What's your MindFlux?</h2>
+            <h2 className="text-2xl font-display font-medium text-foreground mb-2">{t.whatsYourMindflux}</h2>
             <p className="text-muted-foreground text-sm mb-8 max-w-[280px]">
               Let's discover the roots of your thoughts and find clarity together.
             </p>
@@ -169,9 +169,7 @@ export default function Home() {
                 <Textarea
                   value={thought}
                   onChange={(e) => setThought(e.target.value)}
-                  placeholder={
-                    isListening ? "Listening... speak your thoughts" : "Share a thought that's been weighing on you..."
-                  }
+                  placeholder={isListening ? t.listening : t.shareThought}
                   className="min-h-[120px] resize-none border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-foreground placeholder:text-muted-foreground/60"
                 />
                 <div className="flex items-center justify-between mt-3">
@@ -211,7 +209,7 @@ export default function Home() {
                     ) : (
                       <Send className="w-4 h-4" />
                     )}
-                    Discover Roots
+                    {t.discoverRoots}
                   </Button>
                 </div>
               </div>
@@ -219,7 +217,7 @@ export default function Home() {
 
             {/* Suggestions */}
             <div className="mt-8 w-full max-w-md">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-4">Common thought patterns</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider mb-4">{t.commonPatterns}</p>
               <div className="flex flex-wrap justify-center gap-2">
                 {thoughtSuggestions.map((suggestion) => (
                   <button
