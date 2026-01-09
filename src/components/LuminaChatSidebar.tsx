@@ -4,6 +4,7 @@ import { MessageSquare, Plus, Trash2, PanelLeftClose, PanelLeft, BookOpen, Histo
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface Conversation {
   id: string;
@@ -24,57 +25,6 @@ interface LuminaChatSidebarProps {
 
 type SidebarTab = 'library' | 'history';
 
-const libraryTopics = [
-  {
-    id: "stress-management",
-    title: "Stress Management",
-    subtitle: "Techniques to find calm",
-    icon: Wind,
-    gradient: "from-blue-600/80 via-teal-500/70 to-cyan-400/60",
-    bgImage: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop&auto=format"
-  },
-  {
-    id: "anxiety-relief",
-    title: "Anxiety Relief",
-    subtitle: "Quiet your racing mind",
-    icon: Sparkles,
-    gradient: "from-purple-600/80 via-violet-500/70 to-indigo-400/60",
-    bgImage: "https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?w=400&h=300&fit=crop&auto=format"
-  },
-  {
-    id: "better-sleep",
-    title: "Better Sleep",
-    subtitle: "Rest deeply tonight",
-    icon: Moon,
-    gradient: "from-indigo-700/80 via-blue-600/70 to-slate-500/60",
-    bgImage: "https://images.unsplash.com/photo-1507400492013-162706c8c05e?w=400&h=300&fit=crop&auto=format"
-  },
-  {
-    id: "mindfulness",
-    title: "Mindfulness",
-    subtitle: "Be present in the moment",
-    icon: Leaf,
-    gradient: "from-emerald-600/80 via-green-500/70 to-teal-400/60",
-    bgImage: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop&auto=format"
-  },
-  {
-    id: "emotional-wellness",
-    title: "Emotional Wellness",
-    subtitle: "Understand your feelings",
-    icon: Heart,
-    gradient: "from-rose-600/80 via-pink-500/70 to-orange-400/60",
-    bgImage: "https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=400&h=300&fit=crop&auto=format"
-  },
-  {
-    id: "mental-resilience",
-    title: "Mental Resilience",
-    subtitle: "Build inner strength",
-    icon: Brain,
-    gradient: "from-amber-600/80 via-orange-500/70 to-yellow-400/60",
-    bgImage: "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&h=300&fit=crop&auto=format"
-  },
-];
-
 export function LuminaChatSidebar({
   currentConversationId,
   onSelectConversation,
@@ -84,9 +34,61 @@ export function LuminaChatSidebar({
   onToggle,
   userId,
 }: LuminaChatSidebarProps) {
+  const { t } = useLanguage();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<SidebarTab>('library');
+
+  const libraryTopics = [
+    {
+      id: "stress-management",
+      title: t.stressManagement,
+      subtitle: t.stressManagementDesc,
+      icon: Wind,
+      gradient: "from-blue-600/80 via-teal-500/70 to-cyan-400/60",
+      bgImage: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop&auto=format"
+    },
+    {
+      id: "anxiety-relief",
+      title: t.anxietyRelief,
+      subtitle: t.anxietyReliefDesc,
+      icon: Sparkles,
+      gradient: "from-purple-600/80 via-violet-500/70 to-indigo-400/60",
+      bgImage: "https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?w=400&h=300&fit=crop&auto=format"
+    },
+    {
+      id: "better-sleep",
+      title: t.betterSleep,
+      subtitle: t.betterSleepDesc,
+      icon: Moon,
+      gradient: "from-indigo-700/80 via-blue-600/70 to-slate-500/60",
+      bgImage: "https://images.unsplash.com/photo-1507400492013-162706c8c05e?w=400&h=300&fit=crop&auto=format"
+    },
+    {
+      id: "mindfulness",
+      title: t.mindfulness,
+      subtitle: t.mindfulnessDesc,
+      icon: Leaf,
+      gradient: "from-emerald-600/80 via-green-500/70 to-teal-400/60",
+      bgImage: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop&auto=format"
+    },
+    {
+      id: "emotional-wellness",
+      title: t.emotionalWellness,
+      subtitle: t.emotionalWellnessDesc,
+      icon: Heart,
+      gradient: "from-rose-600/80 via-pink-500/70 to-orange-400/60",
+      bgImage: "https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=400&h=300&fit=crop&auto=format"
+    },
+    {
+      id: "mental-resilience",
+      title: t.mentalResilience,
+      subtitle: t.mentalResilienceDesc,
+      icon: Brain,
+      gradient: "from-amber-600/80 via-orange-500/70 to-yellow-400/60",
+      bgImage: "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=400&h=300&fit=crop&auto=format"
+    },
+  ];
 
   useEffect(() => {
     if (userId) {
@@ -141,11 +143,11 @@ export function LuminaChatSidebar({
     const now = new Date();
     const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
     
-    let label = "Today";
-    if (diffDays === 1) label = "Yesterday";
-    else if (diffDays > 1 && diffDays <= 7) label = "Previous 7 Days";
-    else if (diffDays > 7 && diffDays <= 30) label = "Previous 30 Days";
-    else if (diffDays > 30) label = "Older";
+    let label = t.today;
+    if (diffDays === 1) label = t.yesterday;
+    else if (diffDays > 1 && diffDays <= 7) label = t.previous7Days;
+    else if (diffDays > 7 && diffDays <= 30) label = t.previous30Days;
+    else if (diffDays > 30) label = t.older;
 
     if (!groups[label]) groups[label] = [];
     groups[label].push(conv);
@@ -176,7 +178,7 @@ export function LuminaChatSidebar({
           className="flex-1 mr-2 rounded-full text-xs"
         >
           <Plus className="h-4 w-4 mr-1.5" />
-          New Chat
+          {t.newChat}
         </Button>
         <Button
           variant="ghost"
@@ -201,7 +203,7 @@ export function LuminaChatSidebar({
             )}
           >
             <BookOpen className="h-3.5 w-3.5" />
-            Library
+            {t.library}
           </button>
           <button
             onClick={() => setActiveTab('history')}
@@ -213,7 +215,7 @@ export function LuminaChatSidebar({
             )}
           >
             <History className="h-3.5 w-3.5" />
-            History
+            {t.history}
           </button>
         </div>
       </div>
@@ -223,7 +225,7 @@ export function LuminaChatSidebar({
         {activeTab === 'library' ? (
           <div className="space-y-3">
             <p className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider px-1">
-              Topics to Explore
+              {t.topicsToExplore}
             </p>
             <div className="grid gap-2.5">
               {libraryTopics.map((topic) => (
@@ -265,8 +267,8 @@ export function LuminaChatSidebar({
         ) : conversations.length === 0 ? (
           <div className="text-center py-8 px-4">
             <MessageSquare className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-            <p className="text-xs text-muted-foreground">No conversations yet</p>
-            <p className="text-[10px] text-muted-foreground/60 mt-1">Start chatting to save your history</p>
+            <p className="text-xs text-muted-foreground">{t.noConversationsYet}</p>
+            <p className="text-[10px] text-muted-foreground/60 mt-1">{t.startChatting}</p>
           </div>
         ) : (
           Object.entries(groupedConversations).map(([label, convs]) => (

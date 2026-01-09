@@ -1,5 +1,6 @@
 import { TrendingUp, TrendingDown, Minus, Calendar, Activity, Brain, Lock, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
@@ -21,13 +22,6 @@ const categoryColors: Record<string, string> = {
   clear: "text-emerald-500",
 };
 
-const categoryBg: Record<string, string> = {
-  ruminating: "bg-violet-500/20",
-  anxious: "bg-amber-400/20",
-  critical: "bg-rose-500/20",
-  clear: "bg-emerald-400/20",
-};
-
 const categoryChartColors: Record<string, string> = {
   ruminating: "#8b5cf6",
   anxious: "#f59e0b",
@@ -37,11 +31,20 @@ const categoryChartColors: Record<string, string> = {
 
 export default function Reflect() {
   const { authType, logout, user, isLoading: authLoading } = useAuth();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const isBlocked = authType !== "google";
   
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Category translations
+  const categoryTranslations: Record<string, string> = {
+    ruminating: t.ruminating,
+    anxious: t.anxious,
+    critical: t.critical,
+    clear: t.clear,
+  };
 
   useEffect(() => {
     const fetchCheckIns = async () => {
@@ -85,16 +88,16 @@ export default function Reflect() {
             <Lock className="w-8 h-8 text-primary" />
           </div>
           <h2 className="font-display text-xl font-medium text-foreground mb-2">
-            Sign In Required
+            {t.signInRequired}
           </h2>
           <p className="text-sm text-muted-foreground mb-6">
-            Log in with your Google account to access your stress patterns and personalized insights.
+            {t.signInReflectDesc}
           </p>
           <Button
             onClick={handleLogin}
             className="w-full rounded-full"
           >
-            Log In
+            {t.logIn}
           </Button>
         </div>
       </main>
@@ -147,25 +150,25 @@ export default function Reflect() {
   const insights = [
     {
       id: "recent-checkins",
-      title: "Recent Check-ins",
+      title: t.recentCheckIns,
       value: thisWeekCheckIns.length.toString(),
-      subtitle: "this week",
+      subtitle: t.thisWeek,
       icon: Calendar,
       gradient: "from-primary/20 to-accent/20",
     },
     {
       id: "avg-stress",
-      title: "Average Intensity",
+      title: t.avgIntensity,
       value: avgIntensity !== null ? avgIntensity.toString() : "—",
-      subtitle: avgIntensity !== null ? "overall" : "no data yet",
+      subtitle: avgIntensity !== null ? t.overall : t.noDataYet,
       icon: Activity,
       gradient: "from-accent/20 to-secondary/30",
     },
     {
       id: "trend",
-      title: "Weekly Trend",
+      title: t.weeklyTrend,
       value: trendDirection === "up" ? "↑" : trendDirection === "down" ? "↓" : trendDirection === "stable" ? "→" : "—",
-      subtitle: trendDirection === "up" ? "intensity rising" : trendDirection === "down" ? "intensity falling" : trendDirection === "stable" ? "staying stable" : "need more data",
+      subtitle: trendDirection === "up" ? t.intensityRising : trendDirection === "down" ? t.intensityFalling : trendDirection === "stable" ? t.stayingStable : t.needMoreData,
       icon: trendDirection === "down" ? TrendingDown : trendDirection === "stable" ? Minus : TrendingUp,
       gradient: "from-secondary/30 to-primary/20",
     },
@@ -173,7 +176,7 @@ export default function Reflect() {
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString("en-US", { 
+    return date.toLocaleDateString(language === "hi" ? "hi-IN" : "en-US", { 
       month: "short", 
       day: "numeric",
       hour: "numeric",
@@ -186,10 +189,10 @@ export default function Reflect() {
       {/* Header */}
       <header className="px-6 pt-12 pb-6">
         <h1 className="font-display text-3xl font-light text-foreground tracking-tight">
-          Reflect
+          {t.reflect}
         </h1>
         <p className="text-muted-foreground mt-1">
-          Your stress patterns and insights
+          {t.yourPatterns}
         </p>
       </header>
 
@@ -238,7 +241,7 @@ export default function Reflect() {
           {/* Patterns Section with Charts */}
           <section className="px-6 pb-8">
             <h2 className="font-display text-lg font-medium text-foreground mb-4">
-              Patterns & Insights
+              {t.patternsInsights}
             </h2>
             
             {checkIns.length > 0 ? (
@@ -248,7 +251,7 @@ export default function Reflect() {
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/10 opacity-50 rounded-3xl" />
                   
                   <div className="relative">
-                    <h3 className="text-sm font-medium text-foreground mb-4">Thought Pattern Distribution</h3>
+                    <h3 className="text-sm font-medium text-foreground mb-4">{t.thoughtPatternDist}</h3>
                     
                     <div className="flex items-center gap-6">
                       {/* Donut Chart */}
@@ -287,7 +290,7 @@ export default function Reflect() {
                                   className="w-3 h-3 rounded-full" 
                                   style={{ backgroundColor: categoryChartColors[category] || "#6b7280" }}
                                 />
-                                <span className="text-sm capitalize text-foreground">{category}</span>
+                                <span className="text-sm text-foreground">{categoryTranslations[category] || category}</span>
                               </div>
                               <span className="text-sm font-medium text-muted-foreground">
                                 {Math.round((count / checkIns.length) * 100)}%
@@ -305,7 +308,7 @@ export default function Reflect() {
                     <div className="absolute inset-0 bg-gradient-to-br from-accent/10 to-primary/10 opacity-50 rounded-3xl" />
                     
                     <div className="relative">
-                      <h3 className="text-sm font-medium text-foreground mb-4">Intensity Over Time</h3>
+                      <h3 className="text-sm font-medium text-foreground mb-4">{t.intensityOverTime}</h3>
                       
                       <div className="h-40">
                         <ResponsiveContainer width="100%" height="100%">
@@ -314,7 +317,7 @@ export default function Reflect() {
                               .reverse()
                               .slice(-10)
                               .map((c) => ({
-                                date: new Date(c.created_at).toLocaleDateString("en-US", { 
+                                date: new Date(c.created_at).toLocaleDateString(language === "hi" ? "hi-IN" : "en-US", { 
                                   month: "short", 
                                   day: "numeric" 
                                 }),
@@ -372,18 +375,18 @@ export default function Reflect() {
                   <div className="relative grid grid-cols-2 gap-4">
                     <div className="text-center">
                       <p className="text-3xl font-display font-medium text-foreground">{checkIns.length}</p>
-                      <p className="text-xs text-muted-foreground mt-1">Total Check-ins</p>
+                      <p className="text-xs text-muted-foreground mt-1">{t.totalCheckIns}</p>
                     </div>
                     <div className="text-center">
                       <p className="text-3xl font-display font-medium text-foreground">{avgIntensity ?? "—"}</p>
-                      <p className="text-xs text-muted-foreground mt-1">Avg Intensity</p>
+                      <p className="text-xs text-muted-foreground mt-1">{t.avgIntensity}</p>
                     </div>
                     {mostCommonCategory && (
                       <div className="col-span-2 text-center pt-2 border-t border-border/50">
-                        <p className={`text-lg font-medium capitalize ${categoryColors[mostCommonCategory]}`}>
-                          {mostCommonCategory}
+                        <p className={`text-lg font-medium ${categoryColors[mostCommonCategory]}`}>
+                          {categoryTranslations[mostCommonCategory] || mostCommonCategory}
                         </p>
-                        <p className="text-xs text-muted-foreground mt-1">Most Frequent Pattern</p>
+                        <p className="text-xs text-muted-foreground mt-1">{t.mostFrequentPattern}</p>
                       </div>
                     )}
                   </div>
@@ -398,10 +401,10 @@ export default function Reflect() {
                     <Brain className="w-8 h-8 text-primary/60" strokeWidth={1.5} />
                   </div>
                   <h3 className="text-lg font-medium text-foreground">
-                    Start Your Journey
+                    {t.startYourJourney}
                   </h3>
                   <p className="text-sm text-muted-foreground mt-2 max-w-[250px]">
-                    Complete a few thought check-ins to uncover patterns and personalized insights about your mindset.
+                    {t.startJourneyDesc}
                   </p>
                 </div>
               </div>
@@ -412,7 +415,7 @@ export default function Reflect() {
           {checkIns.length > 0 && (
             <section className="px-6 pb-32">
               <h2 className="font-display text-lg font-medium text-foreground mb-4">
-                Recent History
+                {t.recentHistory}
               </h2>
               
               <div className="space-y-3">
@@ -420,43 +423,27 @@ export default function Reflect() {
                   <div
                     key={checkIn.id}
                     className="glass-card p-4 animate-slide-up"
-                    style={{ animationDelay: `${400 + index * 50}ms`, animationFillMode: "backwards" }}
+                    style={{ animationDelay: `${600 + index * 50}ms`, animationFillMode: "backwards" }}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-br from-muted/30 to-transparent rounded-3xl" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-muted/30 to-transparent opacity-50 rounded-3xl" />
                     
                     <div className="relative flex items-center gap-4">
-                      {/* Intensity indicator */}
-                      <div className={`w-12 h-12 rounded-xl ${categoryBg[checkIn.category]} flex items-center justify-center`}>
-                        <span className={`text-lg font-display font-medium ${categoryColors[checkIn.category]}`}>
-                          {checkIn.intensity}
-                        </span>
-                      </div>
-                      
-                      {/* Details */}
+                      <div 
+                        className="w-3 h-3 rounded-full flex-shrink-0" 
+                        style={{ backgroundColor: categoryChartColors[checkIn.category] || "#6b7280" }}
+                      />
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className={`text-sm font-medium capitalize ${categoryColors[checkIn.category]}`}>
-                            {checkIn.category}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {formatDate(checkIn.created_at)}
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {checkIn.feelings.slice(0, 3).map((feeling) => (
-                            <span 
-                              key={feeling}
-                              className="text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full"
-                            >
-                              {feeling}
-                            </span>
-                          ))}
-                          {checkIn.feelings.length > 3 && (
-                            <span className="text-xs text-muted-foreground">
-                              +{checkIn.feelings.length - 3}
-                            </span>
-                          )}
-                        </div>
+                        <p className={`text-sm font-medium ${categoryColors[checkIn.category] || "text-foreground"}`}>
+                          {categoryTranslations[checkIn.category] || checkIn.category}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {checkIn.feelings.slice(0, 3).join(", ")}
+                          {checkIn.feelings.length > 3 && ` +${checkIn.feelings.length - 3}`}
+                        </p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-sm font-medium text-foreground">{checkIn.intensity}</p>
+                        <p className="text-xs text-muted-foreground">{formatDate(checkIn.created_at)}</p>
                       </div>
                     </div>
                   </div>
