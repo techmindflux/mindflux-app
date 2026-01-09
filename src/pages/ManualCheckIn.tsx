@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
 import { Button } from "@/components/ui/button";
 import { X, ArrowLeft, ArrowRight, Plus, ChevronDown, ChevronUp, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -10,75 +11,75 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface ThoughtCategory {
   id: string;
-  title: string;
-  subtitle: string;
+  titleKey: keyof ReturnType<typeof import("@/hooks/useLanguage").useLanguage>["t"];
+  subtitleKey: keyof ReturnType<typeof import("@/hooks/useLanguage").useLanguage>["t"];
   gradient: string;
   shadowColor: string;
   textColor: string;
   bubbleColor: string;
   bubbleTextColor: string;
-  thoughts: string[];
+  thoughtKeys: (keyof ReturnType<typeof import("@/hooks/useLanguage").useLanguage>["t"])[];
 }
 
 const thoughtCategories: ThoughtCategory[] = [
   {
     id: "ruminating",
-    title: "Ruminating",
-    subtitle: "Stuck in the past, replaying",
+    titleKey: "ruminating",
+    subtitleKey: "ruminatingDesc",
     gradient: "from-violet-500 via-purple-500 to-indigo-500",
     shadowColor: "shadow-[0_8px_40px_-8px_rgba(139,92,246,0.5)]",
     textColor: "text-white",
     bubbleColor: "bg-gradient-to-br from-violet-400 to-purple-500",
     bubbleTextColor: "text-white",
-    thoughts: [
-      "Replaying", "Regretting", "Dwelling", "Looping", "Rehashing",
-      "Overanalyzing", "Wishing", "Blaming", "Second-guessing", "Fixating",
-      "Brooding", "Mulling", "Obsessing", "Haunted", "Stuck"
+    thoughtKeys: [
+      "replaying", "regretting", "dwelling", "looping", "rehashing",
+      "overanalyzing", "wishing", "blaming", "secondGuessing", "fixating",
+      "brooding", "mulling", "obsessing", "haunted", "stuck"
     ],
   },
   {
     id: "anxious",
-    title: "Anxious",
-    subtitle: "Worrying about what's next",
+    titleKey: "anxious",
+    subtitleKey: "anxiousDesc",
     gradient: "from-amber-400 via-orange-400 to-rose-400",
     shadowColor: "shadow-[0_8px_40px_-8px_rgba(251,146,60,0.5)]",
     textColor: "text-white",
     bubbleColor: "bg-gradient-to-br from-amber-400 to-orange-500",
     bubbleTextColor: "text-white",
-    thoughts: [
-      "Worrying", "Catastrophizing", "What-ifs", "Spiraling", "Overthinking",
-      "Fearing", "Anticipating", "Dreading", "Racing", "Scattered",
-      "Restless", "Panicking", "Hypervigilant", "Projecting", "Doom-scrolling"
+    thoughtKeys: [
+      "worrying", "catastrophizing", "whatIfs", "spiraling", "overthinking",
+      "fearing", "anticipating", "dreading", "racing", "scattered",
+      "restless", "panicking", "hypervigilant", "projecting", "doomScrolling"
     ],
   },
   {
     id: "critical",
-    title: "Critical",
-    subtitle: "Harsh inner voice, judging",
+    titleKey: "critical",
+    subtitleKey: "criticalDesc",
     gradient: "from-rose-500 via-red-500 to-pink-500",
     shadowColor: "shadow-[0_8px_40px_-8px_rgba(244,63,94,0.5)]",
     textColor: "text-white",
     bubbleColor: "bg-gradient-to-br from-rose-400 to-red-500",
     bubbleTextColor: "text-white",
-    thoughts: [
-      "Judging", "Comparing", "Criticizing", "Doubting", "Shaming",
-      "Not enough", "Failing", "Imposter", "Perfectionist", "Self-attacking",
-      "Belittling", "Harsh", "Unworthy", "Dismissive", "Inadequate"
+    thoughtKeys: [
+      "judging", "comparing", "criticizing", "doubting", "shaming",
+      "notEnough", "failing", "imposter", "perfectionist", "selfAttacking",
+      "belittling", "harsh", "unworthy", "dismissive", "inadequate"
     ],
   },
   {
     id: "clear",
-    title: "Clear",
-    subtitle: "Present, calm, focused",
+    titleKey: "clear",
+    subtitleKey: "clearDesc",
     gradient: "from-emerald-400 via-teal-400 to-cyan-400",
     shadowColor: "shadow-[0_8px_40px_-8px_rgba(52,211,153,0.5)]",
     textColor: "text-emerald-950",
     bubbleColor: "bg-gradient-to-br from-emerald-400 to-teal-500",
     bubbleTextColor: "text-emerald-950",
-    thoughts: [
-      "Present", "Calm", "Focused", "Grounded", "Peaceful",
-      "Accepting", "Curious", "Open", "Grateful", "Hopeful",
-      "Content", "Balanced", "Centered", "Flowing", "Aware"
+    thoughtKeys: [
+      "present", "calm", "focused", "grounded", "peaceful",
+      "accepting", "curious", "open", "grateful", "hopeful",
+      "content", "balanced", "centered", "flowing", "aware"
     ],
   },
 ];
@@ -89,16 +90,11 @@ const contextOptions = {
   locations: ["Home", "Work", "School", "Outside", "Commuting", "Gym"],
 };
 
-const reflectionPrompts = [
-  { id: "trigger", label: "What triggered this thought?", icon: "⚡" },
-  { id: "body", label: "Where do I feel it in my body?", icon: "🫀" },
-  { id: "need", label: "What do I need right now?", icon: "🌱" },
-  { id: "pattern", label: "Is this a familiar pattern?", icon: "🔄" },
-];
-
 export default function ManualCheckIn() {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading, authType, user } = useAuth();
+  const { t, language } = useLanguage();
+  
   const [step, setStep] = useState<"category" | "feeling" | "context">("category");
   const [selectedCategory, setSelectedCategory] = useState<ThoughtCategory | null>(null);
   const [selectedFeelings, setSelectedFeelings] = useState<string[]>([]);
@@ -125,6 +121,13 @@ export default function ManualCheckIn() {
   const [promptResponses, setPromptResponses] = useState<Record<string, string>>({});
   const [isJournalExpanded, setIsJournalExpanded] = useState(false);
   const [freeformNote, setFreeformNote] = useState("");
+
+  const reflectionPrompts = [
+    { id: "trigger", label: t.whatTriggered, icon: "⚡" },
+    { id: "body", label: t.whereInBody, icon: "🫀" },
+    { id: "need", label: t.whatDoYouNeed, icon: "🌱" },
+    { id: "pattern", label: t.familiarPattern, icon: "🔄" },
+  ];
   
   // Handlers for adding custom options
   const handleAddActivity = () => {
@@ -223,10 +226,10 @@ export default function ManualCheckIn() {
   };
 
   const getIntensityLabel = () => {
-    if (feelingIntensity < 25) return "Mild";
-    if (feelingIntensity < 50) return "Moderate";
-    if (feelingIntensity < 75) return "Strong";
-    return "Intense";
+    if (feelingIntensity < 25) return t.mild;
+    if (feelingIntensity < 50) return t.moderate;
+    if (feelingIntensity < 75) return t.strong;
+    return t.intense;
   };
 
   const getIntensityColor = () => {
@@ -334,10 +337,10 @@ export default function ManualCheckIn() {
             {/* Title */}
             <div className="text-center mb-10 animate-fade-in">
               <h1 className="text-2xl font-display font-light text-foreground mb-2 italic">
-                What's the nature of your thoughts?
+                {t.natureOfThoughts}
               </h1>
               <p className="text-muted-foreground text-sm">
-                Tap the one that resonates most
+                {t.tapResonates}
               </p>
             </div>
 
@@ -364,10 +367,10 @@ export default function ManualCheckIn() {
                     }}
                   >
                     <span className={`text-base font-medium ${category.textColor} mb-1`}>
-                      {category.title}
+                      {t[category.titleKey]}
                     </span>
                     <span className={`text-xs ${category.textColor} opacity-80 leading-tight px-2`}>
-                      {category.subtitle}
+                      {t[category.subtitleKey]}
                     </span>
                   </button>
                 ))}
@@ -377,7 +380,7 @@ export default function ManualCheckIn() {
             {/* Bottom hint */}
             <div className="text-center mt-8 animate-fade-in" style={{ animationDelay: "400ms" }}>
               <p className="text-muted-foreground/60 text-xs">
-                This helps us understand your thought patterns
+                {t.helpsUnderstand}
               </p>
             </div>
           </>
@@ -386,21 +389,22 @@ export default function ManualCheckIn() {
             {/* Title */}
             <div className="text-center mb-6 animate-fade-in">
               <h1 className="text-2xl font-display font-light text-foreground mb-2 italic">
-                What's your mind doing right now?
+                {t.whatsMindDoing}
               </h1>
               <p className="text-muted-foreground text-sm">
-                Select all that apply
+                {t.selectAllApply}
               </p>
             </div>
 
             {/* Feelings Grid - Scrollable */}
             <div className="flex-1 overflow-y-auto pb-24 -mx-2 px-2">
               <div className="grid grid-cols-3 gap-3">
-                {selectedCategory.thoughts.map((thought, index) => {
+                {selectedCategory.thoughtKeys.map((thoughtKey, index) => {
+                  const thought = t[thoughtKey];
                   const isSelected = selectedFeelings.includes(thought);
                   return (
                     <button
-                      key={thought}
+                      key={thoughtKey}
                       onClick={() => toggleFeeling(thought)}
                       className={`
                         aspect-square rounded-full 
@@ -441,16 +445,16 @@ export default function ManualCheckIn() {
                       <p className="text-foreground font-medium text-sm">
                         {selectedFeelings.length === 1 
                           ? selectedFeelings[0] 
-                          : `${selectedFeelings.length} thoughts selected`
+                          : `${selectedFeelings.length} ${t.thoughtsSelected}`
                         }
                       </p>
                       <p className="text-muted-foreground text-xs">
-                        {selectedCategory.title.toLowerCase()} thinking
+                        {t[selectedCategory.titleKey].toLowerCase()} {t.thinking}
                       </p>
                     </div>
                   ) : (
                     <p className="text-muted-foreground text-sm">
-                      Select thoughts above
+                      {t.selectThoughtsAbove}
                     </p>
                   )}
                 </div>
@@ -476,7 +480,7 @@ export default function ManualCheckIn() {
             {/* Feelings Summary */}
             <div className="text-center mb-8 animate-fade-in">
               <h1 className="text-3xl font-display font-light text-foreground mb-1 italic">
-                I'm feeling
+                {language === "hi" ? "मैं महसूस कर रहा हूं" : "I'm feeling"}
               </h1>
               <p 
                 className="text-2xl font-display font-medium italic"
@@ -497,7 +501,7 @@ export default function ManualCheckIn() {
             >
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-foreground/80">How intense is this feeling?</span>
+                  <span className="text-sm font-medium text-foreground/80">{t.howIntense}</span>
                   <span 
                     className="text-sm font-semibold px-4 py-1.5 rounded-full"
                     style={{ 
@@ -526,8 +530,8 @@ export default function ManualCheckIn() {
                   />
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground/70">
-                  <span>Barely noticeable</span>
-                  <span>Overwhelming</span>
+                  <span>{language === "hi" ? "मुश्किल से" : "Barely noticeable"}</span>
+                  <span>{language === "hi" ? "बहुत तेज़" : "Overwhelming"}</span>
                 </div>
               </div>
             </div>
@@ -543,12 +547,14 @@ export default function ManualCheckIn() {
                 className="w-full p-4 flex items-center justify-between"
               >
                 <span className="text-foreground/80 text-sm font-medium">
-                  {isJournalExpanded ? "Journal Entry" : "Add Journal Entry (optional)"}
+                  {isJournalExpanded 
+                    ? (language === "hi" ? "जर्नल प्रविष्टि" : "Journal Entry") 
+                    : (language === "hi" ? "जर्नल जोड़ें (वैकल्पिक)" : "Add Journal Entry (optional)")}
                 </span>
                 <div className="flex items-center gap-2">
                   {(selectedPrompts.length > 0 || freeformNote) && !isJournalExpanded && (
                     <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
-                      {selectedPrompts.length + (freeformNote ? 1 : 0)} entries
+                      {selectedPrompts.length + (freeformNote ? 1 : 0)} {language === "hi" ? "प्रविष्टियां" : "entries"}
                     </span>
                   )}
                   {isJournalExpanded ? (
@@ -566,7 +572,7 @@ export default function ManualCheckIn() {
                 <div className="px-4 pb-5 space-y-5">
                   {/* Reflection Prompts */}
                   <div className="space-y-3">
-                    <span className="text-sm text-foreground/70">Quick Reflections</span>
+                    <span className="text-sm text-foreground/70">{t.reflectionPrompts}</span>
                     <div className="grid grid-cols-2 gap-2">
                       {reflectionPrompts.map((prompt) => {
                         const isSelected = selectedPrompts.includes(prompt.id);
@@ -610,7 +616,7 @@ export default function ManualCheckIn() {
                                 ...prev,
                                 [promptId]: e.target.value
                               }))}
-                              placeholder="Tap to reflect..."
+                              placeholder={language === "hi" ? "चिंतन के लिए टैप करें..." : "Tap to reflect..."}
                               className="min-h-[60px] bg-background/50 border-0 resize-none text-sm rounded-xl focus:ring-1 focus:ring-foreground/20"
                             />
                           </div>
@@ -621,11 +627,11 @@ export default function ManualCheckIn() {
 
                   {/* Freeform Note */}
                   <div className="space-y-2">
-                    <span className="text-sm text-foreground/70">Anything else on your mind?</span>
+                    <span className="text-sm text-foreground/70">{t.anythingElse}</span>
                     <Textarea
                       value={freeformNote}
                       onChange={(e) => setFreeformNote(e.target.value)}
-                      placeholder="Write freely here..."
+                      placeholder={t.freeformPlaceholder}
                       className="min-h-[80px] bg-background/50 border-0 resize-none text-sm rounded-xl focus:ring-1 focus:ring-foreground/20"
                     />
                   </div>
@@ -637,7 +643,7 @@ export default function ManualCheckIn() {
             <div className="flex-1 overflow-y-auto pb-28 space-y-6">
               {/* What are you doing? */}
               <div className="animate-fade-in" style={{ animationDelay: "150ms" }}>
-                <h3 className="text-foreground/80 text-lg mb-3">What are you doing?</h3>
+                <h3 className="text-foreground/80 text-lg mb-3">{t.whatWereDoing}</h3>
                 <div className="flex flex-wrap gap-2">
                   {addingActivity ? (
                     <div className="flex items-center gap-1">
@@ -645,7 +651,7 @@ export default function ManualCheckIn() {
                         value={newActivity}
                         onChange={(e) => setNewActivity(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && handleAddActivity()}
-                        placeholder="Add activity..."
+                        placeholder={language === "hi" ? "गतिविधि जोड़ें..." : "Add activity..."}
                         className="h-10 w-32 rounded-full text-sm px-4 bg-background border-foreground/20"
                         autoFocus
                       />
@@ -693,7 +699,7 @@ export default function ManualCheckIn() {
 
               {/* Who are you with? */}
               <div className="animate-fade-in" style={{ animationDelay: "200ms" }}>
-                <h3 className="text-foreground/80 text-lg mb-3">Who are you with?</h3>
+                <h3 className="text-foreground/80 text-lg mb-3">{t.whoWith}</h3>
                 <div className="flex flex-wrap gap-2">
                   {addingCompanion ? (
                     <div className="flex items-center gap-1">
@@ -701,7 +707,7 @@ export default function ManualCheckIn() {
                         value={newCompanion}
                         onChange={(e) => setNewCompanion(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && handleAddCompanion()}
-                        placeholder="Add companion..."
+                        placeholder={language === "hi" ? "साथी जोड़ें..." : "Add companion..."}
                         className="h-10 w-32 rounded-full text-sm px-4 bg-background border-foreground/20"
                         autoFocus
                       />
@@ -749,7 +755,7 @@ export default function ManualCheckIn() {
 
               {/* Where are you? */}
               <div className="animate-fade-in" style={{ animationDelay: "250ms" }}>
-                <h3 className="text-foreground/80 text-lg mb-3">Where are you?</h3>
+                <h3 className="text-foreground/80 text-lg mb-3">{t.whereAreYou}</h3>
                 <div className="flex flex-wrap gap-2">
                   {addingLocation ? (
                     <div className="flex items-center gap-1">
@@ -757,7 +763,7 @@ export default function ManualCheckIn() {
                         value={newLocation}
                         onChange={(e) => setNewLocation(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && handleAddLocation()}
-                        placeholder="Add location..."
+                        placeholder={language === "hi" ? "स्थान जोड़ें..." : "Add location..."}
                         className="h-10 w-32 rounded-full text-sm px-4 bg-background border-foreground/20"
                         autoFocus
                       />
@@ -814,7 +820,7 @@ export default function ManualCheckIn() {
                   onClick={handleCompleteCheckIn}
                   className="flex-1 h-14 rounded-full bg-foreground text-background hover:bg-foreground/90 text-base font-medium"
                 >
-                  Complete check-in
+                  {t.startSession}
                 </Button>
               </div>
             </div>

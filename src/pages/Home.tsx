@@ -160,7 +160,7 @@ export default function Home() {
             {/* Title */}
             <h2 className="text-2xl font-display font-medium text-foreground mb-2">{t.whatsYourMindflux}</h2>
             <p className="text-muted-foreground text-sm mb-8 max-w-[280px]">
-              Let's discover the roots of your thoughts and find clarity together.
+              {t.discoverClarity}
             </p>
 
             {/* Thought Input */}

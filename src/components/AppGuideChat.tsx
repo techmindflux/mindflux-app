@@ -6,20 +6,22 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sparkles, Send, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/hooks/useLanguage";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
 }
 
-const suggestedQuestions = ["What can I do here?", "How do I check in?", "Who is Lumina?"];
-
 export function AppGuideChat() {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const suggestedQuestions = [t.whatCanIDo, t.howDoICheckIn, t.whoIsLumina];
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -66,7 +68,7 @@ export function AppGuideChat() {
       <DrawerTrigger asChild>
         <button className="glass-card rounded-full px-4 py-3 flex items-center gap-2 text-left group transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-lg">
           <Sparkles className="w-4 h-4 text-primary" />
-          <span className="text-sm text-muted-foreground whitespace-nowrap">Ask anything about MindFlux...</span>
+          <span className="text-sm text-muted-foreground whitespace-nowrap">{t.askAnything}</span>
         </button>
       </DrawerTrigger>
 
@@ -79,8 +81,8 @@ export function AppGuideChat() {
                 <Sparkles className="w-4 h-4 text-primary" />
               </div>
               <div>
-                <h3 className="font-medium text-foreground">App Guide</h3>
-                <p className="text-xs text-muted-foreground">Ask me anything about MindFlux</p>
+                <h3 className="font-medium text-foreground">{t.appGuide}</h3>
+                <p className="text-xs text-muted-foreground">{t.askMeAnything}</p>
               </div>
             </div>
             <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setOpen(false)}>
@@ -95,9 +97,9 @@ export function AppGuideChat() {
                 <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center mb-4">
                   <Sparkles className="w-8 h-8 text-primary/60" />
                 </div>
-                <h4 className="text-lg font-medium text-foreground mb-2">How can I help?</h4>
+                <h4 className="text-lg font-medium text-foreground mb-2">{t.howCanIHelp}</h4>
                 <p className="text-sm text-muted-foreground mb-6 max-w-[250px]">
-                  I can guide you through MindFlux's features and help you get started
+                  {t.guideDescription}
                 </p>
                 <div className="flex flex-wrap gap-2 justify-center">
                   {suggestedQuestions.map((q) => (
@@ -144,7 +146,7 @@ export function AppGuideChat() {
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Type your question..."
+                placeholder={t.typeQuestion}
                 className="flex-1 rounded-xl bg-secondary/30 border-0 focus-visible:ring-1 focus-visible:ring-primary/50"
                 disabled={isLoading}
               />

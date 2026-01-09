@@ -1,17 +1,19 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { Home, Heart, BarChart3, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const navItems = [
-  { path: "/home", icon: Home, label: "Home" },
-  { path: "/check-in/manual", icon: Heart, label: "Check-in" },
-  { path: "/reflect", icon: BarChart3, label: "Reflect" },
-  { path: "/lumina", icon: Sparkles, label: "Lumina AI" },
-];
+import { useLanguage } from "@/hooks/useLanguage";
 
 export function LiquidGlassNav() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useLanguage();
+
+  const navItems = [
+    { path: "/home", icon: Home, label: t.navHome },
+    { path: "/check-in/manual", icon: Heart, label: t.navCheckIn },
+    { path: "/reflect", icon: BarChart3, label: t.navReflect },
+    { path: "/lumina", icon: Sparkles, label: t.navLumina },
+  ];
 
   return (
     <>
