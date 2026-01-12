@@ -17,6 +17,7 @@ import LuminaChat from "./pages/LuminaChat";
 import LibraryTopic from "./pages/LibraryTopic";
 import ThoughtUnpacker from "./pages/ThoughtUnpacker";
 import Journal from "./pages/Journal";
+import Journals from "./pages/Journals";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
                 <Route path="/" element={<Auth />} />
                 <Route element={<AppLayout />}>
                   <Route path="/home" element={<Home />} />
+                  <Route path="/journals" element={<Journals />} />
                   <Route path="/reflect" element={<Reflect />} />
                   <Route path="/lumina" element={<LuminaChat />} />
                   <Route path="/library/:topicId" element={<LibraryTopic />} />
