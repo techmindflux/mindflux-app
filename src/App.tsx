@@ -16,6 +16,7 @@ import CoachingSession from "./pages/CoachingSession";
 import LuminaChat from "./pages/LuminaChat";
 import LibraryTopic from "./pages/LibraryTopic";
 import ThoughtUnpacker from "./pages/ThoughtUnpacker";
+import Journal from "./pages/Journal";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const App = () => (
                 </Route>
                 <Route path="/check-in/manual" element={<ManualCheckIn />} />
                 <Route path="/coaching-session" element={<CoachingSession />} />
+                <Route path="/journal" element={<Journal />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
