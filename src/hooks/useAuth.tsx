@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
+import { Capacitor } from "@capacitor/core";
+import { Browser } from "@capacitor/browser";
 import { supabase } from "@/integrations/supabase/client";
 
 interface AuthContextType {
@@ -66,18 +68,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const loginWithGoogle = async () => {
-    const redirectUrl = `${window.location.origin}/home`;
+    const isNative = Capacitor.isNativePlatform();
     
-    const { error } = await supabase.auth.signInWithOAuth({
+    // For native apps, use deep link redirect
+    const redirectUrl = isNative
+      ? "com.mindflux.app://auth/callback"
+      : `${window.location.origin}/home`;
+    
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: redirectUrl,
+        skipBrowserRedirect: isNative, // Skip auto redirect on native
       },
     });
     
     if (error) {
       console.error("Google login error:", error.message);
       throw error;
+    }
+
+    // On native, open the auth URL in the system browser
+    if (isNative && data?.url) {
+      await Browser.open({ url: data.url });
     }
   };
 
