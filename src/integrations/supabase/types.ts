@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      journals: {
+        Row: {
+          content: string | null
+          created_at: string
+          id: string
+          root_cause: string
+          thought: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          root_cause: string
+          thought: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          id?: string
+          root_cause?: string
+          thought?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       lumina_conversations: {
         Row: {
           created_at: string
