@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Heart, BarChart3, Sparkles } from "lucide-react";
+import { Home, Heart, BarChart3, Sparkles, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/hooks/useLanguage";
 
@@ -11,6 +11,7 @@ export function LiquidGlassNav() {
   const navItems = [
     { path: "/home", icon: Home, label: t.navHome },
     { path: "/check-in/manual", icon: Heart, label: t.navCheckIn },
+    { path: "/journals", icon: BookOpen, label: t.navJournals },
     { path: "/reflect", icon: BarChart3, label: t.navReflect },
     { path: "/lumina", icon: Sparkles, label: t.navLumina },
   ];
@@ -64,8 +65,8 @@ export function LiquidGlassNav() {
                     isActive && "liquid-glass-item--active"
                   )}
                 >
-                  <Icon className="w-6 h-6" strokeWidth={isActive ? 2.5 : 2} />
-                  <span className="text-[11px] font-semibold tracking-tight">{label}</span>
+                  <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
+                  <span className="text-[10px] font-semibold tracking-tight">{label}</span>
                 </button>
               );
             })}

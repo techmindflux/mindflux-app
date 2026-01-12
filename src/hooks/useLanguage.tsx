@@ -21,6 +21,7 @@ interface Translations {
   // Navigation
   navHome: string;
   navCheckIn: string;
+  navJournals: string;
   navReflect: string;
   navLumina: string;
   // App Guide
@@ -234,6 +235,7 @@ const translations: Record<Language, Translations> = {
     // Navigation
     navHome: "Home",
     navCheckIn: "Check-in",
+    navJournals: "Journals",
     navReflect: "Reflect",
     navLumina: "Lumina AI",
     // App Guide
@@ -440,6 +442,7 @@ const translations: Record<Language, Translations> = {
     // Navigation
     navHome: "होम",
     navCheckIn: "चेक-इन",
+    navJournals: "जर्नल",
     navReflect: "प्रतिबिंब",
     navLumina: "लुमिना AI",
     // App Guide
