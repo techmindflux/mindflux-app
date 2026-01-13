@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { Capacitor } from "@capacitor/core";
-import { Browser } from "@capacitor/browser";
 import { supabase } from "@/integrations/supabase/client";
 
 interface AuthContextType {
@@ -90,6 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // On native, open the auth URL in the system browser
     if (isNative && data?.url) {
+      const { Browser } = await import("@capacitor/browser");
       await Browser.open({ url: data.url });
     }
   };
